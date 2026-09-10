@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Neo Colors (used by XML theme; runtime colors are in Color.kt) -->
+    <color name="neo_background">#0A0A0B</color>
+    <color name="neo_surface">#141416</color>
+    <color name="neo_primary">#6E56F6</color>
+</resources>

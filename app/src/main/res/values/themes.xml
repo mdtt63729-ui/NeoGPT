@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NeoGPT" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/neo_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:fontFamily">@font/josefin_sans</item>
+    </style>
+
+    <style name="Theme.NeoGPT.Splash" parent="Theme.NeoGPT">
+        <item name="android:windowBackground">@color/neo_background</item>
+    </style>
+</resources>
