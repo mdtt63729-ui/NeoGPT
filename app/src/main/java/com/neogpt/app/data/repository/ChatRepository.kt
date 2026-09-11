@@ -64,7 +64,6 @@ class ChatRepository(
     }
 
     private suspend fun getMessagesSync(chatId: String): List<Message> {
-        // This would use a suspend query; simplified for architecture
         return messageDao.getMessagesForChatOnce(chatId).map { it.toDomain() }
     }
 

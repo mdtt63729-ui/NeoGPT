@@ -18,8 +18,6 @@ import androidx.compose.foundation.background
  * Lightweight markdown renderer for streaming AI responses.
  * Supports: headings, bold, italic, code blocks, inline code,
  * blockquotes, ordered/unordered lists, horizontal rules.
- * For production, integrate a full markdown library like
- * Markwon or compose-markdown.
  */
 @Composable
 fun NeoMarkdown(
@@ -70,7 +68,7 @@ private fun NeoMarkdownLine(
             )
         }
         line.startsWith("```") -> {
-            // Code block — simplified; production needs multi-line parsing
+            // Fenced code marker; code content is rendered line-by-line below.
             Text(
                 text = line.removePrefix("```"),
                 style = NeoCodeStyle,

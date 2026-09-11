@@ -1,29 +1,25 @@
-# Neo GPT
+# NeoGPT
 
-Neo GPT is a Material 3 Android AI workspace built with Jetpack Compose and Josefin Sans.
+NeoGPT is an Android AI assistant application built with Jetpack Compose and Material 3.
 
-## Included
+## CI build
 
-- Polished Material 3 home, chat, settings, projects, files, tasks, research, code, canvas, search and notification screens.
-- Gemini API connection with encrypted API-key storage.
-- Streaming Gemini responses.
-- Stop generation, copy and share response actions.
-- Android speech-recognition permission flow.
-- File picker UI.
-- GitHub Actions debug build on every push and pull request.
+GitHub Actions is configured in `.github/workflows/android-build.yml`.
 
-## Run
+- Every push to any branch starts the workflow automatically.
+- Pull requests also run the same validation/build.
+- `workflow_dispatch` is enabled for a manual run from the GitHub Actions tab.
+- The workflow builds **only the unsigned Release APK** with `:app:assembleRelease`.
+- No Debug APK is built or uploaded by the workflow.
+- The resulting unsigned APK is uploaded as a GitHub Actions artifact.
 
-Open the `NeoGPT` directory in Android Studio with JDK 17 and sync the project.
+## Toolchain
 
-To use live AI:
-1. Install the app.
-2. Open **Settings**.
-3. Add a Gemini API key.
-4. Return to Home and start a chat.
+- Android Gradle Plugin 9.1.1
+- Gradle 9.3.1
+- JDK 17
+- compileSdk / targetSdk 37
+- Jetpack Compose BOM 2026.08.00
+- Material 3 1.4.0
 
-The API key is stored with AndroidX Security `EncryptedSharedPreferences`.
-
-## CI
-
-`.github/workflows/android-build.yml` builds `assembleDebug` on every push and pull request and uploads the generated APK as a workflow artifact.
+Compose 1.12 requires compileSdk 37 and AGP 9.x, so the project uses that toolchain rather than mixing the newer Compose libraries with AGP 8.x.
