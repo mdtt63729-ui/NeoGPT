@@ -23,3 +23,5 @@ GitHub Actions is configured in `.github/workflows/android-build.yml`.
 - Material 3 1.4.0
 
 Compose 1.12 requires compileSdk 37 and AGP 9.x, so the project uses that toolchain rather than mixing the newer Compose libraries with AGP 8.x.
+
+The CI workflow does not request the invalid literal `platforms;android-37` package. It detects the API 37 platform revision exposed by the GitHub runner (preferring `android-37.0`) and creates the canonical `android-37` SDK path when the runner stores the preview platform under a revisioned directory.

@@ -45,11 +45,57 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          # API 37 is currently published by Google's SDK repository as preview
+          # package revisions (for example android-37.0/android-37.2-beta3),
+          # not as the literal package id platforms;android-37.
+          # Discover the API 37 package that this runner exposes instead of
+          # requesting a package id that may not exist in the remote repository.
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+          SDK_LIST="$(sdkmanager --list 2>/dev/null)"
+          API37_PACKAGE=""
+          for candidate in \
+            'platforms;android-37.0' \
+            'platforms;android-37' \
+            'platforms;android-37.1' \
+            'platforms;android-37.2' \
+            'platforms;android-37.2-beta3' \
+            'platforms;android-37.2-beta2' \
+            'platforms;android-37.2-beta1'; do
+            if printf '%s\n' "$SDK_LIST" | grep -F "$candidate" >/dev/null; then
+              API37_PACKAGE="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$API37_PACKAGE" ]; then
+            echo 'ERROR: No Android API 37 SDK platform package is available on this runner.'
+            echo 'Available Android SDK platform packages:'
+            printf '%s\n' "$SDK_LIST" | grep -E 'platforms;android-3[0-9]' || true
+            exit 1
+          fi
+
+          echo "Installing API 37 SDK platform: $API37_PACKAGE"
           sdkmanager \
             'platform-tools' \
-            'platforms;android-37' \
+            "$API37_PACKAGE" \
             'build-tools;36.0.0'
+
+          # AGP resolves compileSdk 37 from the canonical android-37 directory.
+          # Preview API 37 packages may be installed under android-37.x, so create
+          # a local compatibility link when necessary.
+          if [ ! -d "$ANDROID_SDK_ROOT/platforms/android-37" ]; then
+            API37_DIR="$(find "$ANDROID_SDK_ROOT/platforms" -maxdepth 1 -type d -name 'android-37*' | sort -V | tail -n 1)"
+            if [ -z "$API37_DIR" ]; then
+              echo 'ERROR: API 37 SDK platform was not installed.'
+              exit 1
+            fi
+            ln -s "$API37_DIR" "$ANDROID_SDK_ROOT/platforms/android-37"
+          fi
+
+          test -f "$ANDROID_SDK_ROOT/platforms/android-37/android.jar"
+          echo "Using SDK platform: $ANDROID_SDK_ROOT/platforms/android-37"
 
       - name: Verify Android project
         shell: bash
