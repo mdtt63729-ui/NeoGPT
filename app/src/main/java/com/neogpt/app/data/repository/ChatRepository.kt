@@ -6,7 +6,6 @@ import com.neogpt.app.data.local.entity.ChatEntity
 import com.neogpt.app.data.local.entity.MessageEntity
 import com.neogpt.app.data.remote.gemini.GeminiDataSource
 import com.neogpt.app.data.remote.gemini.GeminiRequestMapper
-import com.neogpt.app.data.remote.gemini.GeminiResponseMapper
 import com.neogpt.app.domain.model.Chat
 import com.neogpt.app.domain.model.Message
 import kotlinx.coroutines.flow.Flow
@@ -66,7 +65,7 @@ class ChatRepository(
 
     private suspend fun getMessagesSync(chatId: String): List<Message> {
         // This would use a suspend query; simplified for architecture
-        return emptyList()
+        return messageDao.getMessagesForChatOnce(chatId).map { it.toDomain() }
     }
 
     // Mappers

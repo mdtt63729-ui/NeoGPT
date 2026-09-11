@@ -10,8 +10,8 @@ import com.neogpt.app.ui.components.NeoModelInfo
 data class HomeUiState(
     val greeting: String = "What should we explore?",
     val selectedModel: NeoModelInfo = NeoModelInfo(
-        id = "gemini-flash",
-        name = "Gemini Flash",
+        id = "gemini-2.5-flash",
+        name = "Gemini 2.5 Flash",
         description = "Fast and versatile AI model",
         speedBadge = "Fast",
         contextWindow = "1M tokens",
@@ -27,16 +27,16 @@ data class HomeUiState(
             capabilities = listOf("text", "vision", "code"),
         ),
         NeoModelInfo(
-            id = "gemini-flash-lite",
-            name = "Gemini Flash Lite",
+            id = "gemini-2.5-flash-lite",
+            name = "Gemini 2.5 Flash Lite",
             description = "Lightweight model for quick responses",
             speedBadge = "Fastest",
             contextWindow = "1M tokens",
             capabilities = listOf("text", "vision"),
         ),
         NeoModelInfo(
-            id = "gemini-pro",
-            name = "Gemini Pro",
+            id = "gemini-2.5-pro",
+            name = "Gemini 2.5 Pro",
             description = "Advanced model for complex tasks",
             speedBadge = "Balanced",
             contextWindow = "2M tokens",

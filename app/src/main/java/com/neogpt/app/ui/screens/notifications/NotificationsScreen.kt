@@ -1,37 +1,29 @@
 package com.neogpt.app.ui.screens.notifications
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.neogpt.app.ui.components.NeoTopBar
+import com.neogpt.app.ui.components.*
 
 @Composable
-fun NotificationsScreen(
-    onBack: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding(),
-    ) {
-        NeoTopBar(
-            title = "Notifications",
-            onMenuClick = onBack,
-            showBack = true,
-            onBackClick = onBack,
-        )
-        Text(
-            text = "Notifications",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.Center),
-        )
+fun NotificationsScreen(onBack: () -> Unit) {
+    var enabled by remember { mutableStateOf(true) }
+    NeoPage("Notifications", onBack) {
+        NeoSectionTitle("Stay in the loop", "Control how Neo GPT keeps you informed.")
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            ListItem(
+                headlineContent = { Text("Notifications") },
+                supportingContent = { Text(if (enabled) "Enabled" else "Paused") },
+                leadingContent = { Icon(Icons.Rounded.Notifications, null) },
+                trailingContent = { Switch(enabled, { enabled = it }) },
+            )
+        }
+        Spacer(Modifier.height(com.neogpt.app.ui.theme.NeoSpacing.md))
+        NeoFeatureCard(Icons.Rounded.TaskAlt, "Task updates", "Get notified when an automation completes.", {}, Modifier)
+        Spacer(Modifier.height(com.neogpt.app.ui.theme.NeoSpacing.sm))
+        NeoFeatureCard(Icons.Rounded.AutoAwesome, "AI activity", "Receive important generation and error alerts.", {}, Modifier)
     }
 }

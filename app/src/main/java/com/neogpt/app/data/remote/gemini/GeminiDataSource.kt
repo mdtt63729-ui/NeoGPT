@@ -25,7 +25,7 @@ class GeminiDataSource(
         request: GeminiRequest,
     ): Flow<String> = flow {
         val apiKey = apiKeyProvider()
-        val url = "$baseUrl/v1beta/models/$model:streamGenerateContent?key=$apiKey"
+        val url = "$baseUrl/v1beta/models/$model:streamGenerateContent?key=$apiKey&alt=sse"
         val jsonBody = requestAdapter.toJson(request)
         val httpRequest = Request.Builder()
             .url(url)

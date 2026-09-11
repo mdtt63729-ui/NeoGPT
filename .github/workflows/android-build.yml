@@ -1,73 +1,37 @@
-name: Build unsigned release APK
+name: Android Build
 
 on:
   push:
+    branches: ["**"]
   pull_request:
-  workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: android-build-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
-    name: Build unsigned release APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-          cache: gradle
+          java-version: "17"
 
-      - name: Setup Gradle and Android SDK
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.10.2"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
 
-      - name: Build release APK
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # The Android SDK is preinstalled on GitHub's hosted runner.
-          # setup-android makes sdkmanager available; install only what this project needs.
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" >/dev/null
-
-          # Make sure the bundled Josefin Sans font is present before compiling.
-          test -s app/src/main/res/font/josefin_sans.xml
-          for font in thin extra_light light regular medium semi_bold bold; do
-            test -s "app/src/main/res/font/josefin_sans_${font}.ttf"
-          done
-
-          gradle :app:assembleRelease --no-daemon --stacktrace --console=plain
-
-          APK="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-          test -n "$APK"
-          echo "Release APK: $APK"
-
-          # Release has no signingConfig, so this remains unsigned.
-          if command -v apksigner >/dev/null 2>&1; then
-            apksigner verify --verbose "$APK" || true
-          fi
-
-      - name: Upload unsigned release APK
-        if: success()
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGPT-unsigned-release-${{ github.sha }}
-          path: app/build/outputs/apk/release/*.apk
+          name: neo-gpt-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          retention-days: 14

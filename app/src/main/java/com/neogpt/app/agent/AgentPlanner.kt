@@ -2,7 +2,7 @@ package com.neogpt.app.agent
 
 class AgentPlanner {
     fun plan(task: String): List<AgentStep> {
-        // TODO: Use Gemini API to generate a plan
+        require(task.isNotBlank()) { "Task cannot be blank" }
         return listOf(
             AgentStep("1", "Analyze request"),
             AgentStep("2", "Gather resources"),

@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import androidx.navigation.navDeepLink
 import com.neogpt.app.ui.screens.splash.SplashScreen
 import com.neogpt.app.ui.screens.home.HomeScreen
 import com.neogpt.app.ui.screens.chat.ChatScreen
@@ -42,7 +43,7 @@ fun NeoNavGraph(
         composable(NeoRoutes.HOME, enterTransition = { fadeIn() }) {
             HomeScreen(
                 onOpenDrawer = onOpenDrawer,
-                onOpenChat = { navController.navigate(NeoRoutes.chat()) },
+                onOpenChat = { model, prompt -> navController.navigate(NeoRoutes.chat(model = model, prompt = prompt)) },
                 onOpenSearch = { navController.navigate(NeoRoutes.SEARCH) },
                 onOpenSettings = { navController.navigate(NeoRoutes.SETTINGS) },
                 onOpenProjects = { navController.navigate(NeoRoutes.PROJECTS) },
@@ -51,13 +52,21 @@ fun NeoNavGraph(
         }
         composable(
             NeoRoutes.CHAT,
-            arguments = listOf(navArgument("chatId") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("chatId") { type = NavType.StringType },
+                navArgument("model") { type = NavType.StringType; defaultValue = "gemini-2.5-flash" },
+                navArgument("prompt") { type = NavType.StringType; defaultValue = "" },
+            ),
             enterTransition = { slideUpEnter() },
             exitTransition = { slideRightExit() },
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
+            val model = backStackEntry.arguments?.getString("model") ?: "gemini-2.5-flash"
+            val prompt = backStackEntry.arguments?.getString("prompt").orEmpty()
             ChatScreen(
                 chatId = chatId,
+                modelId = model,
+                initialPrompt = prompt,
                 onBack = { navController.popBackStack() },
                 onOpenDrawer = onOpenDrawer,
             )

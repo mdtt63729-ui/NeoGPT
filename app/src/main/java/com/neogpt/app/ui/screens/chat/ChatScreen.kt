@@ -1,81 +1,114 @@
 package com.neogpt.app.ui.screens.chat
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.neogpt.app.ui.components.ComposerMode
-import com.neogpt.app.ui.components.NeoComposer
-import com.neogpt.app.ui.components.NeoMessage
-import com.neogpt.app.ui.components.NeoMessageData
-import com.neogpt.app.ui.components.NeoTopBar
-import com.neogpt.app.ui.components.MessageRole
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.neogpt.app.ui.components.*
 import com.neogpt.app.ui.theme.NeoSpacing
 
 @Composable
 fun ChatScreen(
     chatId: String,
+    modelId: String,
+    initialPrompt: String = "",
     onBack: () -> Unit,
     onOpenDrawer: () -> Unit,
 ) {
-    val viewModel: ChatViewModel = remember { ChatViewModel() }
+    val context = LocalContext.current
+    val viewModel = remember(modelId) { ChatViewModel(context, modelId) }
     val state by viewModel.state.collectAsState()
     var composerText by remember { mutableStateOf("") }
+    var showMode by remember { mutableStateOf(false) }
+    var showError by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.size - 1)
-        }
+    val recordPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) composerText = composerText
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding(),
-        ) {
-            // Top bar
+    LaunchedEffect(initialPrompt) {
+        if (initialPrompt.isNotBlank() && state.messages.isEmpty()) {
+            viewModel.sendMessage(initialPrompt)
+        }
+    }
+    LaunchedEffect(state.messages.size, state.messages.lastOrNull()?.content) {
+        if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.lastIndex)
+    }
+    LaunchedEffect(state.error) { showError = state.error != null }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
             NeoTopBar(
                 title = state.modelName,
                 onMenuClick = onOpenDrawer,
-                onTitleClick = { /* open model picker */ },
                 showBack = true,
                 onBackClick = onBack,
+                onTitleClick = { },
+                showTitleSelector = false,
+                actionIcon = Icons.Rounded.MoreVert,
+                onActionClick = { showMode = !showMode },
             )
-
-            // Messages
+        },
+        bottomBar = {
+            Column(Modifier.navigationBarsPadding()) {
+                if (showMode) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.lg, vertical = NeoSpacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ComposerMode.values().filter { it != ComposerMode.DEFAULT }.forEach { mode ->
+                            FilterChip(
+                                selected = state.activeMode == mode,
+                                onClick = { /* mode selection can be wired to tool execution */ },
+                                label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                            )
+                        }
+                    }
+                }
+                NeoComposer(
+                    text = composerText,
+                    onTextChange = { composerText = it },
+                    onSend = { viewModel.sendMessage(composerText); composerText = "" },
+                    onAddClick = { showMode = !showMode },
+                    onVoiceClick = {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            // Android speech UI is handled by the platform; text entry remains available.
+                        } else recordPermission.launch(Manifest.permission.RECORD_AUDIO)
+                    },
+                    isGenerating = state.isGenerating,
+                    onStop = viewModel::stopGeneration,
+                    activeMode = state.activeMode,
+                    modifier = Modifier.padding(bottom = NeoSpacing.sm),
+                )
+            }
+        },
+    ) { padding ->
+        if (state.messages.isEmpty()) {
+            NeoEmptyState(
+                icon = Icons.Rounded.AutoAwesome,
+                title = "Start a conversation",
+                description = "Ask a question, brainstorm an idea, or paste code to get started.",
+            )
+        } else {
             LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 state = listState,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = NeoSpacing.md),
+                contentPadding = PaddingValues(vertical = NeoSpacing.md),
             ) {
-                items(state.messages) { message ->
+                items(state.messages, key = { it.id }) { message ->
                     NeoMessage(
                         message = message,
                         onCopy = { viewModel.copyMessage(message.id) },
@@ -84,30 +117,19 @@ fun ChatScreen(
                         onEdit = { viewModel.editMessage(message.id) },
                         onLike = { viewModel.likeMessage(message.id) },
                         onDislike = { viewModel.dislikeMessage(message.id) },
-                        onMore = { /* show more options */ },
                     )
                 }
             }
-
-            // Composer
-            NeoComposer(
-                text = composerText,
-                onTextChange = { composerText = it },
-                onSend = {
-                    if (composerText.isNotBlank()) {
-                        viewModel.sendMessage(composerText)
-                        composerText = ""
-                    }
-                },
-                onAddClick = { /* open add menu */ },
-                onVoiceClick = { /* open voice mode */ },
-                isGenerating = state.isGenerating,
-                onStop = { viewModel.stopGeneration() },
-                activeMode = state.activeMode,
-                modifier = Modifier.navigationBarsPadding(),
-            )
-
-            Spacer(modifier = Modifier.height(NeoSpacing.lg))
         }
+    }
+
+    if (showError && state.error != null) {
+        AlertDialog(
+            onDismissRequest = { showError = false },
+            icon = { Icon(Icons.Rounded.ErrorOutline, null) },
+            title = { Text("Neo GPT couldn't respond") },
+            text = { Text(state.error ?: "") },
+            confirmButton = { TextButton(onClick = { showError = false }) { Text("OK") } },
+        )
     }
 }
