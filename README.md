@@ -37,3 +37,16 @@ The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implemen
 - Fixed the clickable `ElevatedCard` call in Projects by using named parameters.
 - Explicitly opted into the experimental Material 3 API used by `CenterAlignedTopAppBar`.
 - The workflow still builds only the unsigned release APK.
+
+## V5 UI / launch / AI connection update
+
+- Replaced the old splash presentation with a fully in-app animated launch screen; no logo tile or icon artwork is rendered by the Compose splash.
+- Android 12+ starting-window icon is neutral/transparent so the custom launch experience can take over cleanly.
+- First launch now opens a dedicated Gemini API key setup screen when no key is stored. The key is verified against the Gemini model list before it is saved.
+- Home screen redesigned as a clean AI workspace: no large logo card, no search button, no quick-action clutter.
+- Top controls are reduced to menu, model selector, and new-chat.
+- Model IDs are corrected to real Gemini API IDs and the app now discovers stream-capable Gemini models from the API when possible.
+- Composer receives IME padding so it moves above the Android keyboard instead of being covered.
+- Drawer primary navigation is simplified to New Chat and Chats; Search is no longer a primary drawer button.
+- Secondary-screen back navigation continues to pop the current route so it returns to the screen that opened it.
+- At the root Home screen, the system back action uses a double-back guard and then a confirmation dialog before exiting.

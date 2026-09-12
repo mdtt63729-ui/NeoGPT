@@ -19,6 +19,7 @@ class GeminiDataSource(
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     private val requestAdapter = moshi.adapter(GeminiRequest::class.java)
     private val responseAdapter = moshi.adapter(GeminiResponse::class.java)
+    private val modelListAdapter = moshi.adapter(GeminiModelListResponse::class.java)
 
     fun streamGenerateContent(
         model: String,
@@ -66,6 +67,21 @@ class GeminiDataSource(
         }
         reader.close()
         response.close()
+    }
+
+    suspend fun listModels(): List<GeminiModelSummary> {
+        val apiKey = apiKeyProvider()
+        if (apiKey.isBlank()) throw IllegalStateException("Gemini API key is not configured.")
+        val url = "$baseUrl/v1beta/models?key=$apiKey"
+        val request = Request.Builder().url(url).get().build()
+        val response = okHttpClient.newCall(request).execute()
+        response.use {
+            if (!it.isSuccessful) {
+                throw Exception("Gemini API error: ${it.code}")
+            }
+            val body = it.body?.string().orEmpty()
+            return modelListAdapter.fromJson(body)?.models.orEmpty()
+        }
     }
 
     suspend fun generateContent(

@@ -89,7 +89,8 @@ fun NeoComposer(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = NeoSpacing.lg),
+            .padding(horizontal = NeoSpacing.lg)
+            .padding(vertical = 2.dp),
         shape = NeoShapes.pill,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {

@@ -4,7 +4,7 @@ data class Chat(
     val id: String,
     val title: String = "New Chat",
     val messages: List<Message> = emptyList(),
-    val modelId: String = "gemini-flash",
+    val modelId: String = "gemini-2.5-flash",
     val projectId: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),

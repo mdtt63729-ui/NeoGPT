@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.asStateFlow
 class ModelRepository {
     private val _models = MutableStateFlow(
         listOf(
-            ModelInfo("gemini-flash", "Gemini Flash", "Fast and versatile", "Fast", "1M", listOf("text", "vision", "code")),
-            ModelInfo("gemini-flash-lite", "Gemini Flash Lite", "Lightweight", "Fastest", "1M", listOf("text", "vision")),
-            ModelInfo("gemini-pro", "Gemini Pro", "Advanced model", "Balanced", "2M", listOf("text", "vision", "code", "tools")),
+            ModelInfo("gemini-2.5-flash", "Gemini 2.5 Flash", "Fast and capable", "Fast", "1M", listOf("text", "vision", "code")),
+            ModelInfo("gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite", "Fastest and economical", "Fastest", "1M", listOf("text", "vision")),
+            ModelInfo("gemini-2.5-pro", "Gemini 2.5 Pro", "Advanced reasoning and coding", "Advanced", "1M", listOf("text", "vision", "code", "tools")),
         )
     )
     val models: StateFlow<List<ModelInfo>> = _models.asStateFlow()

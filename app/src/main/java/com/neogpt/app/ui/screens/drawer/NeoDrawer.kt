@@ -13,13 +13,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.AddComment
+import androidx.compose.material.icons.rounded.ChatBubbleOutline
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Help
 import androidx.compose.material.icons.rounded.Menu
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -51,9 +52,8 @@ fun NeoDrawer(
     onClose: () -> Unit,
 ) {
     val primaryItems = listOf(
-        DrawerItem("New Chat", Icons.Rounded.Menu, NeoRoutes.HOME),
-        DrawerItem("Search", Icons.Rounded.Search, NeoRoutes.SEARCH),
-        DrawerItem("Chats", Icons.Rounded.Menu, NeoRoutes.HOME),
+        DrawerItem("New Chat", Icons.Rounded.AddComment, NeoRoutes.HOME),
+        DrawerItem("Chats", Icons.Rounded.ChatBubbleOutline, NeoRoutes.HOME),
     )
     val workspaceItems = listOf(
         DrawerItem("Projects", Icons.Rounded.Folder, NeoRoutes.PROJECTS),

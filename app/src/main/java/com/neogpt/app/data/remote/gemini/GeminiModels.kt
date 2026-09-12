@@ -66,6 +66,29 @@ data class FunctionDeclaration(
     val parameters: Map<String, Any>? = null,
 )
 
+
+@JsonClass(generateAdapter = true)
+data class GeminiModelListResponse(
+    val models: List<GeminiModelSummary> = emptyList(),
+)
+
+@JsonClass(generateAdapter = true)
+data class GeminiModelSummary(
+    val name: String,
+    val displayName: String? = null,
+    val description: String? = null,
+    @Json(name = "inputTokenLimit") val inputTokenLimit: Int? = null,
+    @Json(name = "outputTokenLimit") val outputTokenLimit: Int? = null,
+    @Json(name = "supportedGenerationMethods") val supportedGenerationMethods: List<String> = emptyList(),
+) {
+    val id: String get() = name.removePrefix("models/")
+    val supportsTextGeneration: Boolean
+        get() = supportedGenerationMethods.contains("generateContent")
+
+    val supportsStreamingTextGeneration: Boolean
+        get() = supportedGenerationMethods.contains("streamGenerateContent")
+}
+
 // Response models
 @JsonClass(generateAdapter = true)
 data class GeminiResponse(

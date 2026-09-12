@@ -64,7 +64,7 @@ fun ChatScreen(
             )
         },
         bottomBar = {
-            Column(Modifier.navigationBarsPadding()) {
+            Column(Modifier.imePadding().navigationBarsPadding()) {
                 if (showMode) {
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.lg, vertical = NeoSpacing.xs),

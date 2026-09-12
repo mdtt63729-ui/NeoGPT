@@ -5,6 +5,7 @@ import android.net.Uri
 object NeoRoutes {
     const val SPLASH = "splash"
     const val HOME = "home"
+    const val API_SETUP = "api_setup"
     const val CHAT = "chat/{chatId}?model={model}&prompt={prompt}"
     const val SEARCH = "search"
     const val PROJECTS = "projects"

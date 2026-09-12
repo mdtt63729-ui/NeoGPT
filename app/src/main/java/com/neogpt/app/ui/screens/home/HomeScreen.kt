@@ -1,15 +1,40 @@
 package com.neogpt.app.ui.screens.home
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.AddComment
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.neogpt.app.ui.components.*
+import androidx.compose.ui.platform.LocalContext
+import com.neogpt.app.ui.components.NeoComposer
+import com.neogpt.app.ui.components.NeoModelPickerSheet
 import com.neogpt.app.ui.theme.NeoFontFamily
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
@@ -18,12 +43,9 @@ import com.neogpt.app.ui.theme.NeoSpacing
 fun HomeScreen(
     onOpenDrawer: () -> Unit,
     onOpenChat: (String, String) -> Unit,
-    onOpenSearch: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenProjects: () -> Unit,
-    onOpenCustomAI: () -> Unit,
 ) {
-    val viewModel: HomeViewModel = remember { HomeViewModel() }
+    val context = LocalContext.current
+    val viewModel: HomeViewModel = remember { HomeViewModel(context) }
     val state by viewModel.state.collectAsState()
     var composerText by remember { mutableStateOf("") }
     var showModelPicker by remember { mutableStateOf(false) }
@@ -31,42 +53,78 @@ fun HomeScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            NeoTopBar(
-                title = state.selectedModel.name,
-                onMenuClick = onOpenDrawer,
-                onTitleClick = { showModelPicker = true },
-                showTitleSelector = true,
-                actionIcon = Icons.Rounded.Search,
-                onActionClick = onOpenSearch,
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .statusBarsPadding()
+                    .padding(top = 6.dp, bottom = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    onClick = onOpenDrawer,
+                    modifier = Modifier.size(48.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(25.dp))
+                    }
+                }
+                Surface(
+                    onClick = { showModelPicker = true },
+                    shape = NeoShapes.pill,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(state.selectedModel.name, style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.size(3.dp))
+                        Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp))
+                    }
+                }
+                Surface(
+                    onClick = { onOpenChat(state.selectedModel.id, "") },
+                    modifier = Modifier.size(48.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.AddComment, "New chat", Modifier.size(23.dp))
+                    }
+                }
+            }
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(horizontal = NeoSpacing.lg),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+                .navigationBarsPadding()
+                .padding(horizontal = NeoSpacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
-            Surface(
-                modifier = Modifier.size(76.dp),
-                shape = NeoShapes.large,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                tonalElevation = 2.dp,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-            }
-            Spacer(Modifier.height(NeoSpacing.lg))
-            Text("Neo GPT", fontFamily = NeoFontFamily, style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Light)
-            Spacer(Modifier.height(NeoSpacing.sm))
-            Text(state.greeting, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(NeoSpacing.xxl))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
-                QuickAction(Icons.Rounded.Search, "Search", onOpenSearch, Modifier.weight(1f))
-                QuickAction(Icons.Rounded.Folder, "Projects", onOpenProjects, Modifier.weight(1f))
-                QuickAction(Icons.Rounded.AutoAwesome, "Custom AI", onOpenCustomAI, Modifier.weight(1f))
-            }
-            Spacer(Modifier.weight(1f))
+            Text(
+                text = "Neo GPT",
+                style = MaterialTheme.typography.displayMedium,
+                fontFamily = NeoFontFamily,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = state.greeting,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.weight(1.35f))
             NeoComposer(
                 text = composerText,
                 onTextChange = { composerText = it },
@@ -80,11 +138,14 @@ fun HomeScreen(
                 onAddClick = { },
                 onVoiceClick = { },
                 placeholder = "Ask anything…",
-                modifier = Modifier.navigationBarsPadding(),
+                modifier = Modifier.padding(bottom = NeoSpacing.sm),
             )
-            Spacer(Modifier.height(NeoSpacing.md))
-            Text("AI can make mistakes. Check important information.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(NeoSpacing.sm))
+            Text(
+                "AI can make mistakes. Check important information.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = NeoSpacing.sm),
+            )
         }
     }
 
@@ -95,14 +156,5 @@ fun HomeScreen(
             onSelect = { viewModel.selectModel(it); showModelPicker = false },
             onDismiss = { showModelPicker = false },
         )
-    }
-}
-
-@Composable
-private fun QuickAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
-    FilledTonalButton(onClick = onClick, modifier = modifier.height(52.dp), shape = NeoShapes.large) {
-        Icon(icon, null, Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label)
     }
 }
