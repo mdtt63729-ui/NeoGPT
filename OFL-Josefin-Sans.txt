@@ -1,0 +1,10 @@
+Josefin Sans is distributed under the SIL Open Font License, Version 1.1.
+
+The font files bundled in app/src/main/res/font/ are Josefin Sans TTF files.
+See the official Google Fonts Josefin Sans project for the upstream license and
+font metadata:
+https://github.com/googlefonts/josefinsans
+
+The SIL Open Font License permits use, study, copying, merging, embedding,
+modification, and redistribution subject to its license terms. The full
+license text is available from the upstream project.

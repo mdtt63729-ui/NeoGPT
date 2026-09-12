@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Keep the framework startup theme on the API-21+ Material framework
+        style. Day/night is supplied by the resource-qualified themes below.
+        Using the framework day/night Material base style here is not available on
+        every compile SDK package exposed by CI, while Theme.Material.NoActionBar
+        is stable across the app's min/compile SDK range.
+    -->
+    <style name="Theme.NeoGPT" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/neo_start_background</item>
+        <item name="android:fontFamily">@font/josefin_sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
+    <style name="Theme.NeoGPT.Starting" parent="Theme.NeoGPT">
+        <item name="android:windowBackground">@color/neo_start_background</item>
+    </style>
+</resources>

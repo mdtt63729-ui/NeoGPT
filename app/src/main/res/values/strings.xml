@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Neo GPT</string>
+    <string name="app_version">1.0.0</string>
+
+    <!-- Greetings -->
+    <string name="greeting_1">What should we explore?</string>
+    <string name="greeting_2">What can we create today?</string>
+    <string name="greeting_3">Ready when you are.</string>
+    <string name="greeting_4">Any new ideas to explore?</string>
+    <string name="greeting_5">Where should we begin?</string>
+    <string name="greeting_6">Let\'s make progress.</string>
+    <string name="greeting_7">How can I help you today?</string>
+    <string name="greeting_8">Evening, how are things?</string>
+
+    <!-- Composer -->
+    <string name="composer_placeholder">Ask anything…</string>
+
+    <!-- Errors -->
+    <string name="error_generic">Something went wrong.</string>
+    <string name="error_network">Check your internet connection and try again.</string>
+    <string name="error_rate_limit">This model is temporarily unavailable.</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_change_model">Change model</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Navigation -->
+    <string name="nav_new_chat">New Chat</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_chats">Chats</string>
+    <string name="nav_projects">Projects</string>
+    <string name="nav_files">Files</string>
+    <string name="nav_canvas">Canvas</string>
+    <string name="nav_research">Research</string>
+    <string name="nav_code">Code</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_custom_ai">Custom AI</string>
+    <string name="nav_models">Models</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_help">Help</string>
+
+    <!-- Model Picker -->
+    <string name="model_picker_title">Choose model</string>
+    <string name="model_picker_note">Model IDs are configurable and may change based on API availability.</string>
+</resources>

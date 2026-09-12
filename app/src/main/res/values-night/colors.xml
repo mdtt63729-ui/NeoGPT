@@ -1,0 +1,7 @@
+<resources>
+    <color name="neo_background">#111318</color>
+    <color name="neo_surface">#1B1D22</color>
+    <color name="neo_primary">#D0BCFF</color>
+    <color name="transparent">#00000000</color>
+    <color name="neo_start_background">#111318</color>
+</resources>
