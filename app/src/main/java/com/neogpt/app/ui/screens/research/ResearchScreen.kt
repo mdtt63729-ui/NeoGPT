@@ -84,7 +84,7 @@ fun ResearchScreen(onBack: () -> Unit) {
                 Text(error ?: "", Modifier.padding(NeoSpacing.lg), color = MaterialTheme.colorScheme.onErrorContainer)
             }
         } else if (report.isBlank()) {
-            NeoEmptyState(Icons.Rounded.TravelExplore, "Ready to research", "Ask a focused question and Neo GPT will use live search grounding.")
+            NeoEmptyState(icon = Icons.Rounded.TravelExplore, title = "Ready to research", description = "Ask a focused question and Neo GPT will use live search grounding.")
         } else {
             ElevatedCard(Modifier.fillMaxWidth().weight(1f)) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(NeoSpacing.lg)) {

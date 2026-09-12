@@ -62,7 +62,14 @@ private fun ComposerContent(
     onLiveClick: () -> Unit, isGenerating: Boolean, onStop: () -> Unit, attachments: List<AttachmentChip>,
     onRemoveAttachment: (String) -> Unit, activeMode: ComposerMode?, placeholder: String, enterToSend: Boolean,
 ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm, vertical = NeoSpacing.xs)) {
+    var showAddMenu by remember { mutableStateOf(false) }
+    val action = when { isGenerating -> "stop"; text.isNotBlank() -> "send"; else -> "live" }
+    val actionScale by animateFloatAsState(
+        targetValue = when (action) { "send" -> 1f; "stop" -> 0.94f; else -> 1f },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "composer-action-scale",
+    )
+    Column(Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm, vertical = NeoSpacing.xs)) {
             AnimatedVisibility(attachments.isNotEmpty(), enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.xs, vertical = NeoSpacing.xs), horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
                     attachments.forEach { chip -> NeoFileChip(chip.name, chip.type, { onRemoveAttachment(chip.id) }) }
@@ -116,7 +123,6 @@ private fun ComposerContent(
                 if (isListening) NeoIconButton(icon = Icons.Rounded.Stop, onClick = onVoiceStop, contentDescription = "Stop voice input")
                 else NeoIconButton(icon = Icons.Rounded.Mic, onClick = onVoiceClick, contentDescription = "Voice input")
                 Spacer(Modifier.width(NeoSpacing.xs))
-                val action = when { isGenerating -> "stop"; text.isNotBlank() -> "send"; else -> "live" }
                 AnimatedContent(targetState = action, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "composer-action") { current ->
                     Surface(
                         modifier = Modifier.size(42.dp).graphicsLayer { scaleX = actionScale; scaleY = actionScale },

@@ -54,7 +54,7 @@ class SecureStorage(context: Context) {
 
     fun getProviderKey(providerId: String): String? {
         val storedKey = providerKey(providerId)
-        val payload: String = prefs.getString(storedKey, null)
+        val payload = prefs.getString(storedKey, null)
             ?: if (providerId == "gemini") prefs.getString(LEGACY_GEMINI_KEY, null) else null
             ?: return null
         return try {

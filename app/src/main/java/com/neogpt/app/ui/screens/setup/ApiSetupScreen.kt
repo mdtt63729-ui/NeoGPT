@@ -155,6 +155,7 @@ private fun verifyProvider(provider: AiProvider, key: String): Result<Unit> = ru
         AiProvider.GEMINI -> "https://generativelanguage.googleapis.com/v1beta/models?key=$key"
         AiProvider.OPENROUTER -> "https://openrouter.ai/api/v1/models"
         AiProvider.NVIDIA -> "https://integrate.api.nvidia.com/v1/models"
+        AiProvider.NEO_ALPHA -> return Result.success(Unit)
     }
     val request = Request.Builder().url(endpoint).header("Authorization", "Bearer $key").get().build()
     OkHttpClient().newCall(request).execute().use { response ->

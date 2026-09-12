@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
 import com.neogpt.app.ui.components.*
 import com.neogpt.app.ui.theme.NeoShapes
@@ -20,9 +21,9 @@ fun ProjectsScreen(onBack: () -> Unit, onProjectClick: (String) -> Unit, onNewPr
         projects.forEachIndexed { index, name ->
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth().padding(bottom = NeoSpacing.sm),
-                onClick = { onProjectClick(index.toString()) },
             ) {
                 ListItem(
+                    modifier = Modifier.clickable { onProjectClick(index.toString()) },
                     headlineContent = { Text(name) },
                     supportingContent = { Text("Chats, files and instructions") },
                     leadingContent = { Icon(Icons.Rounded.Folder, null) },

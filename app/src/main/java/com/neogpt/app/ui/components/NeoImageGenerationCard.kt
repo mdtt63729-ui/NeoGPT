@@ -11,8 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.ui.input.pointer.awaitPointerEvent
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +27,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.input.pointer.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.changedToUp
@@ -61,9 +60,9 @@ fun NeoImageGenerationCard(
         animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Restart),
         label = "image-shimmer",
     )
-    val blurRadius by animateFloatAsStateCompat(if (imageCreated) 0f else 16f)
-    val imageAlpha by animateFloatAsStateCompat(if (imageCreated) 1f else 0f)
-    val imageScale by animateFloatAsStateCompat(if (imageCreated) 1f else 0.96f)
+    val blurRadius = animateFloatAsStateCompat(if (imageCreated) 0f else 16f)
+    val imageAlpha = animateFloatAsStateCompat(if (imageCreated) 1f else 0f)
+    val imageScale = animateFloatAsStateCompat(if (imageCreated) 1f else 0.96f)
 
     Column(modifier.fillMaxWidth()) {
         Box(
@@ -85,8 +84,8 @@ fun NeoImageGenerationCard(
                                     MaterialTheme.colorScheme.surfaceContainerHighest,
                                     MaterialTheme.colorScheme.secondaryContainer,
                                 ),
-                                startX = shimmer * 700f,
-                                endX = shimmer * 700f + 900f,
+                                start = androidx.compose.ui.geometry.Offset(shimmer * 700f, 0f),
+                                end = androidx.compose.ui.geometry.Offset(shimmer * 700f + 900f, 1000f),
                             )
                         )
                 )
