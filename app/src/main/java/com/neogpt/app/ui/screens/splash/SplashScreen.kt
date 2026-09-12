@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +64,10 @@ fun SplashScreen(
         label = "pulse",
     )
 
+    val primary = MaterialTheme.colorScheme.primary
+    val onBackground = MaterialTheme.colorScheme.onBackground
+    val background = MaterialTheme.colorScheme.background
+
     var visible by remember { androidx.compose.runtime.mutableStateOf(false) }
     LaunchedEffect(Unit) {
         visible = true
@@ -73,7 +78,7 @@ fun SplashScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(background),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.size(300.dp).alpha(0.16f)) {
@@ -86,7 +91,7 @@ fun SplashScreen(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent),
+                    colors = listOf(primary, Color.Transparent),
                     center = glowCenter,
                     radius = size.minDimension * 0.34f,
                 ),
@@ -94,7 +99,7 @@ fun SplashScreen(
                 center = glowCenter,
             )
             drawArc(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.32f),
+                color = primary.copy(alpha = 0.32f),
                 startAngle = orbit,
                 sweepAngle = 105f,
                 useCenter = false,
@@ -114,7 +119,7 @@ fun SplashScreen(
                         modifier = Modifier.scale(pulse),
                         style = MaterialTheme.typography.displayLarge,
                         fontFamily = NeoFontFamily,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = onBackground,
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(
@@ -127,7 +132,7 @@ fun SplashScreen(
                                 Modifier
                                     .size(if (index == 1) 7.dp else 5.dp)
                                     .alpha(alpha)
-                                    .background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape),
+                                    .background(primary, androidx.compose.foundation.shape.CircleShape),
                             )
                         }
                     }

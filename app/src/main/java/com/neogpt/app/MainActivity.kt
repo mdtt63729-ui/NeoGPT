@@ -2,7 +2,7 @@ package com.neogpt.app
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.BackHandler
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,14 +12,13 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neogpt.app.ui.navigation.NeoNavGraph
@@ -42,19 +41,28 @@ class MainActivity : ComponentActivity() {
                 var exitDialog by remember { mutableStateOf(false) }
                 var lastBackAt by remember { mutableLongStateOf(0L) }
 
-                BackHandler(enabled = drawerState.isOpen) {
-                    scope.launch { drawerState.close() }
-                }
-
-                BackHandler(enabled = !drawerState.isOpen && currentRoute == NeoRoutes.HOME) {
-                    val now = System.currentTimeMillis()
-                    if (now - lastBackAt <= 1800L) {
-                        exitDialog = true
-                        lastBackAt = 0L
-                    } else {
-                        lastBackAt = now
-                        Toast.makeText(this@MainActivity, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                DisposableEffect(currentRoute, drawerState.isOpen, exitDialog) {
+                    val callback = object : OnBackPressedCallback(true) {
+                        override fun handleOnBackPressed() {
+                            when {
+                                exitDialog -> exitDialog = false
+                                drawerState.isOpen -> scope.launch { drawerState.close() }
+                                currentRoute == NeoRoutes.HOME -> {
+                                    val now = System.currentTimeMillis()
+                                    if (now - lastBackAt <= 1800L) {
+                                        exitDialog = true
+                                        lastBackAt = 0L
+                                    } else {
+                                        lastBackAt = now
+                                        Toast.makeText(this@MainActivity, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                else -> navController.popBackStack()
+                            }
+                        }
                     }
+                    onBackPressedDispatcher.addCallback(this@MainActivity, callback)
+                    onDispose { callback.remove() }
                 }
 
                 ModalNavigationDrawer(
