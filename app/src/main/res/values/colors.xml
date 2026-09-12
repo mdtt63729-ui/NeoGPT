@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="neo_background">#FAFAFB</color>
     <color name="neo_surface">#FFFFFF</color>
-    <color name="neo_primary">#5B45E0</color>
-    <color name="neo_transparent">#00000000</color>
+    <color name="neo_primary">#6750A4</color>
+    <color name="transparent">#00000000</color>
+    <color name="neo_start_background">#FAFAFB</color>
 </resources>

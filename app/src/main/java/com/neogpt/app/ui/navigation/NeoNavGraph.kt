@@ -10,12 +10,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.neogpt.app.security.SecureStorage
+import com.neogpt.app.ai.AiProvider
 import com.neogpt.app.ui.screens.canvas.CanvasScreen
 import com.neogpt.app.ui.screens.chat.ChatScreen
 import com.neogpt.app.ui.screens.code.CodeScreen
 import com.neogpt.app.ui.screens.customai.CustomAIScreen
 import com.neogpt.app.ui.screens.files.FilesScreen
 import com.neogpt.app.ui.screens.home.HomeScreen
+import com.neogpt.app.ui.screens.live.LiveConversationScreen
 import com.neogpt.app.ui.screens.notifications.NotificationsScreen
 import com.neogpt.app.ui.screens.projects.ProjectDetailScreen
 import com.neogpt.app.ui.screens.projects.ProjectsScreen
@@ -39,7 +41,8 @@ fun NeoNavGraph(
         composable(NeoRoutes.SPLASH, exitTransition = { fadeOut() }) {
             SplashScreen(
                 onNavigate = {
-                    val next = if (SecureStorage(context).hasApiKey()) NeoRoutes.HOME else NeoRoutes.API_SETUP
+                    val storage = SecureStorage(context)
+                    val next = if (AiProvider.entries.any { !storage.getProviderKey(it.id).isNullOrBlank() }) NeoRoutes.HOME else NeoRoutes.API_SETUP
                     navController.navigate(next) {
                         popUpTo(NeoRoutes.SPLASH) { inclusive = true }
                     }
@@ -58,28 +61,45 @@ fun NeoNavGraph(
         composable(NeoRoutes.HOME, enterTransition = { fadeIn() }) {
             HomeScreen(
                 onOpenDrawer = onOpenDrawer,
-                onOpenChat = { model, prompt -> navController.navigate(NeoRoutes.chat(model = model, prompt = prompt)) },
+                onOpenChat = { model, prompt, uri, name, mime -> navController.navigate(NeoRoutes.chat(model = model, prompt = prompt, attachmentUri = uri, attachmentName = name, attachmentMime = mime)) },
+                onOpenLive = { navController.navigate(NeoRoutes.live()) },
             )
         }
         composable(
             NeoRoutes.CHAT,
             arguments = listOf(
                 navArgument("chatId") { type = NavType.StringType },
-                navArgument("model") { type = NavType.StringType; defaultValue = "gemini-2.5-flash" },
+                navArgument("model") { type = NavType.StringType; defaultValue = "gemini:gemini-3.8-flash" },
                 navArgument("prompt") { type = NavType.StringType; defaultValue = "" },
+                navArgument("attachmentUri") { type = NavType.StringType; defaultValue = "" },
+                navArgument("attachmentName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("attachmentMime") { type = NavType.StringType; defaultValue = "" },
             ),
             enterTransition = { slideUpEnter() },
             exitTransition = { slideRightExit() },
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
-            val model = backStackEntry.arguments?.getString("model") ?: "gemini-2.5-flash"
+            val model = backStackEntry.arguments?.getString("model") ?: "gemini:gemini-3.8-flash"
             val prompt = backStackEntry.arguments?.getString("prompt").orEmpty()
+            val attachmentUri = backStackEntry.arguments?.getString("attachmentUri").orEmpty()
+            val attachmentName = backStackEntry.arguments?.getString("attachmentName").orEmpty()
+            val attachmentMime = backStackEntry.arguments?.getString("attachmentMime").orEmpty()
             ChatScreen(
                 chatId = chatId,
                 modelId = model,
                 initialPrompt = prompt,
+                initialAttachmentUri = attachmentUri,
+                initialAttachmentName = attachmentName,
+                initialAttachmentMime = attachmentMime,
                 onBack = { navController.popBackStack() },
                 onOpenDrawer = onOpenDrawer,
+                onOpenLive = { navController.navigate(NeoRoutes.live(model)) },
+            )
+        }
+        composable(NeoRoutes.LIVE, arguments = listOf(navArgument("model") { type = NavType.StringType; defaultValue = "gemini:gemini-3.8-flash" }), enterTransition = { slideUpEnter() }) { entry ->
+            LiveConversationScreen(
+                modelId = entry.arguments?.getString("model") ?: "gemini:gemini-3.8-flash",
+                onBack = { navController.popBackStack() },
             )
         }
         composable(NeoRoutes.SEARCH, enterTransition = { slideUpEnter() }) {

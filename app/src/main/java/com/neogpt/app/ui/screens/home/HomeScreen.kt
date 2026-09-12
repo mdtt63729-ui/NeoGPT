@@ -1,170 +1,130 @@
 package com.neogpt.app.ui.screens.home
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddComment
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.Menu
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
 import com.neogpt.app.R
-import com.neogpt.app.ui.components.NeoComposer
-import com.neogpt.app.ui.components.NeoModelPickerSheet
+import com.neogpt.app.ui.components.*
 import com.neogpt.app.ui.theme.NeoFontFamily
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
+import com.neogpt.app.voice.VoiceInputManager
+import com.neogpt.app.voice.VoiceState
 
 @Composable
-fun HomeScreen(
-    onOpenDrawer: () -> Unit,
-    onOpenChat: (String, String) -> Unit,
-) {
+fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, String, String) -> Unit, onOpenLive: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: HomeViewModel = remember { HomeViewModel(context) }
     val state by viewModel.state.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshCatalog() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     var composerText by remember { mutableStateOf("") }
     var showModelPicker by remember { mutableStateOf(false) }
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedName by remember { mutableStateOf("") }
+    var selectedMime by remember { mutableStateOf("") }
+    var voiceManager by remember { mutableStateOf<VoiceInputManager?>(null) }
+    var voiceState by remember { mutableStateOf(VoiceState.IDLE) }
+    var voiceTranscript by remember { mutableStateOf("") }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp)
-                    .statusBarsPadding()
-                    .padding(top = 6.dp, bottom = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(
-                    onClick = onOpenDrawer,
-                    modifier = Modifier.size(48.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(25.dp))
-                    }
-                }
-                Surface(
-                    onClick = { showModelPicker = true },
-                    shape = NeoShapes.pill,
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(state.selectedModel.name, style = MaterialTheme.typography.labelLarge)
-                        Spacer(Modifier.size(3.dp))
-                        Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp))
-                    }
-                }
-                Surface(
-                    onClick = { onOpenChat(state.selectedModel.id, "") },
-                    modifier = Modifier.size(48.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.AddComment, "New chat", Modifier.size(23.dp))
-                    }
-                }
-            }
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = NeoSpacing.lg),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(Modifier.weight(1f))
-            Image(
-                painter = painterResource(R.drawable.neo_app_icon),
-                contentDescription = null,
-                modifier = Modifier.size(64.dp).clip(CircleShape),
-            )
-            Spacer(Modifier.height(18.dp))
-            Text(
-                text = "Neo GPT",
-                style = MaterialTheme.typography.displayMedium,
-                fontFamily = NeoFontFamily,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = state.greeting,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.weight(1.35f))
-            NeoComposer(
-                text = composerText,
-                onTextChange = { composerText = it },
-                onSend = {
-                    if (composerText.isNotBlank()) {
-                        val text = composerText.trim()
-                        composerText = ""
-                        onOpenChat(state.selectedModel.id, text)
-                    }
-                },
-                onAddClick = { },
-                onVoiceClick = { },
-                placeholder = "Ask anything…",
-                modifier = Modifier.padding(bottom = NeoSpacing.sm),
-            )
-            Text(
-                "AI can make mistakes. Check important information.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = NeoSpacing.sm),
-            )
+    val recordPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) voiceManager?.startListening() }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            selectedUri = uri
+            selectedMime = context.contentResolver.getType(uri) ?: "application/octet-stream"
+            selectedName = queryName(context, uri)
         }
     }
-
-    if (showModelPicker) {
-        NeoModelPickerSheet(
-            models = state.availableModels,
-            selectedModelId = state.selectedModel.id,
-            onSelect = { viewModel.selectModel(it); showModelPicker = false },
-            onDismiss = { showModelPicker = false },
-        )
+    DisposableEffect(Unit) {
+        val manager = VoiceInputManager(context); voiceManager = manager
+        val job = kotlinx.coroutines.MainScope().launch {
+            kotlinx.coroutines.flow.combine(manager.state, manager.transcript) { s, t -> s to t }.collect { (s, t) ->
+                voiceState = s; voiceTranscript = t
+                if (s == VoiceState.IDLE && t.isNotBlank()) composerText = t
+            }
+        }
+        onDispose { job.cancel(); manager.destroy(); voiceManager = null }
     }
+
+    val listening = voiceState == VoiceState.LISTENING || voiceState == VoiceState.PROCESSING
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
+        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Surface(onClick = onOpenDrawer, modifier = Modifier.size(48.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp) { Box(Alignment.Center) { Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(25.dp)) } }
+            Surface(onClick = { showModelPicker = true }, shape = NeoShapes.pill, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp) {
+                Row(Modifier.padding(horizontal = 17.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Text(state.selectedModel.name, style = MaterialTheme.typography.labelLarge); Spacer(Modifier.width(3.dp)); Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp)) }
+            }
+            Surface(onClick = { onOpenChat(state.selectedModel.id, "", "", "", "") }, modifier = Modifier.size(48.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp) { Box(Alignment.Center) { Icon(Icons.Rounded.AddComment, "New chat", Modifier.size(23.dp)) } }
+        }
+    }) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).imePadding().navigationBarsPadding().padding(horizontal = NeoSpacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.weight(1f))
+            val infinite = rememberInfiniteTransition(label = "home-logo")
+            val logoScale by infinite.animateFloat(0.96f, 1.04f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "home-logo-scale")
+            Surface(Modifier.size(84.dp).graphicsLayer { scaleX = logoScale; scaleY = logoScale }, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 3.dp) {
+                Image(painterResource(R.drawable.neo_app_icon), null, Modifier.padding(10.dp).clip(CircleShape))
+            }
+            Spacer(Modifier.height(18.dp))
+            Text("Neo GPT", style = MaterialTheme.typography.displaySmall, fontFamily = NeoFontFamily)
+            Spacer(Modifier.height(8.dp))
+            Text(state.greeting, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            Spacer(Modifier.weight(1.25f))
+            NeoComposer(
+                text = composerText, onTextChange = { composerText = it },
+                onSend = {
+                    if (composerText.isNotBlank() || selectedUri != null) {
+                        onOpenChat(state.selectedModel.id, composerText.trim(), selectedUri?.toString().orEmpty(), selectedName, selectedMime)
+                        composerText = ""; selectedUri = null; selectedName = ""; selectedMime = ""
+                    }
+                },
+                onAddClick = { filePicker.launch(arrayOf("image/*", "application/pdf", "text/*", "audio/*", "video/*", "application/octet-stream")) },
+                onVoiceClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) voiceManager?.startListening() else recordPermission.launch(Manifest.permission.RECORD_AUDIO) },
+                onVoiceStop = { voiceManager?.stopListening() },
+                isListening = listening, voiceTranscript = voiceTranscript,
+                onLiveClick = onOpenLive,
+                attachments = if (selectedUri != null) listOf(AttachmentChip("home", selectedName, homeAttachmentType(selectedMime))) else emptyList(),
+                onRemoveAttachment = { selectedUri = null; selectedName = ""; selectedMime = "" },
+                modifier = Modifier.padding(bottom = NeoSpacing.sm),
+            )
+            Text("AI can make mistakes. Check important information.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = NeoSpacing.sm))
+        }
+    }
+    if (showModelPicker) NeoModelPickerSheet(state.availableModels, state.selectedModel.id, { viewModel.selectModel(it); showModelPicker = false }, { showModelPicker = false })
 }
+
+private fun queryName(context: Context, uri: Uri): String {
+    var name = "Attachment"
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c -> if (c.moveToFirst()) c.getColumnIndex(OpenableColumns.DISPLAY_NAME).takeIf { it >= 0 }?.let { name = c.getString(it) ?: name } }
+    return name
+}
+private fun homeAttachmentType(mime: String) = when { mime.startsWith("image/") -> AttachmentType.IMAGE; mime.startsWith("audio/") -> AttachmentType.AUDIO; mime.startsWith("video/") -> AttachmentType.VIDEO; else -> AttachmentType.FILE }

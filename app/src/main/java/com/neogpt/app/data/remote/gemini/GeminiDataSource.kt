@@ -1,5 +1,7 @@
 package com.neogpt.app.data.remote.gemini
 
+import android.content.ContentResolver
+import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaType
@@ -20,6 +22,7 @@ class GeminiDataSource(
     private val requestAdapter = moshi.adapter(GeminiRequest::class.java)
     private val responseAdapter = moshi.adapter(GeminiResponse::class.java)
     private val modelListAdapter = moshi.adapter(GeminiModelListResponse::class.java)
+    private val fileUploadAdapter = moshi.adapter(FileUploadResponse::class.java)
 
     fun streamGenerateContent(
         model: String,
@@ -81,6 +84,40 @@ class GeminiDataSource(
             }
             val body = it.body?.string().orEmpty()
             return modelListAdapter.fromJson(body)?.models.orEmpty()
+        }
+    }
+
+    suspend fun uploadFile(contentResolver: ContentResolver, uri: Uri, displayName: String, mimeType: String): GeminiFile {
+        val apiKey = apiKeyProvider()
+        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("Unable to read attachment.")
+        val startUrl = "$baseUrl/upload/v1beta/files?key=$apiKey"
+        val startBody = "{\"file\":{\"display_name\":${moshi.adapter(String::class.java).toJson(displayName)}}}"
+        val startRequest = Request.Builder()
+            .url(startUrl)
+            .header("X-Goog-Upload-Protocol", "resumable")
+            .header("X-Goog-Upload-Command", "start")
+            .header("X-Goog-Upload-Header-Content-Length", bytes.size.toString())
+            .header("X-Goog-Upload-Header-Content-Type", mimeType)
+            .post(startBody.toRequestBody("application/json".toMediaType()))
+            .build()
+        val startResponse = okHttpClient.newCall(startRequest).execute()
+        val uploadUrl = startResponse.use {
+            if (!it.isSuccessful) error("Gemini file upload could not start: ${it.code}")
+            it.header("X-Goog-Upload-URL") ?: it.header("x-goog-upload-url") ?: error("Gemini did not return an upload URL.")
+        }
+        val uploadRequest = Request.Builder()
+            .url(uploadUrl)
+            .header("Content-Length", bytes.size.toString())
+            .header("X-Goog-Upload-Offset", "0")
+            .header("X-Goog-Upload-Command", "upload, finalize")
+            .post(bytes.toRequestBody(mimeType.toMediaType()))
+            .build()
+        val uploadResponse = okHttpClient.newCall(uploadRequest).execute()
+        return uploadResponse.use {
+            if (!it.isSuccessful) error("Gemini file upload failed: ${it.code}")
+            fileUploadAdapter.fromJson(it.body?.string().orEmpty())?.file
+                ?: error("Gemini returned an invalid file response.")
         }
     }
 

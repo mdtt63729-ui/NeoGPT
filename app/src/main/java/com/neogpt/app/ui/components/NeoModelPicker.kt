@@ -31,6 +31,8 @@ data class NeoModelInfo(
     val speedBadge: String,
     val contextWindow: String,
     val capabilities: List<String>,
+    val provider: String = "Google Gemini",
+    val isAvailable: Boolean = true,
 )
 
 @Composable
@@ -51,7 +53,7 @@ fun NeoModelPickerSheet(
                 NeoModelItem(
                     model = model,
                     isSelected = model.id == selectedModelId,
-                    onClick = { onSelect(model) },
+                    onClick = { if (model.isAvailable) onSelect(model) },
                 )
                 Spacer(modifier = Modifier.height(NeoSpacing.sm))
             }
@@ -80,7 +82,9 @@ private fun NeoModelItem(
             MaterialTheme.colorScheme.primaryContainer
         else
             MaterialTheme.colorScheme.surface,
+        tonalElevation = if (model.isAvailable) 1.dp else 0.dp,
         onClick = onClick,
+        enabled = model.isAvailable,
     ) {
         Row(
             modifier = Modifier.padding(NeoSpacing.lg),
@@ -101,6 +105,8 @@ private fun NeoModelItem(
                         text = model.speedBadge,
                         selected = false,
                     )
+                    Spacer(modifier = Modifier.width(NeoSpacing.xs))
+                    NeoChip(text = model.provider, selected = false)
                 }
                 Spacer(modifier = Modifier.height(NeoSpacing.xs))
                 Text(
@@ -113,7 +119,7 @@ private fun NeoModelItem(
                 )
                 Spacer(modifier = Modifier.height(NeoSpacing.xs))
                 Text(
-                    text = "Context: ${model.contextWindow}",
+                    text = if (model.isAvailable) "Context: ${model.contextWindow}" else "Catalogue only • chat endpoint not supported",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isSelected)
                         MaterialTheme.colorScheme.onPrimaryContainer

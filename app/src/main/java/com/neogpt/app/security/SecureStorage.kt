@@ -20,10 +20,18 @@ class SecureStorage(context: Context) {
     private val prefs: SharedPreferences =
         appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun saveApiKey(key: String) {
+    fun saveApiKey(key: String) = saveProviderKey("gemini", key)
+
+    fun getApiKey(): String? = getProviderKey("gemini")
+
+    fun hasApiKey(): Boolean = !getApiKey().isNullOrBlank()
+
+    fun clearApiKey() = clearProviderKey("gemini")
+
+    fun saveProviderKey(providerId: String, key: String) {
         val cleanKey = key.trim()
         if (cleanKey.isEmpty()) {
-            clearApiKey()
+            clearProviderKey(providerId)
             return
         }
         val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -31,11 +39,18 @@ class SecureStorage(context: Context) {
         val encrypted = cipher.doFinal(cleanKey.toByteArray(StandardCharsets.UTF_8))
         val payload = Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + SEPARATOR +
             Base64.encodeToString(encrypted, Base64.NO_WRAP)
-        prefs.edit().putString(KEY_API, payload).apply()
+        prefs.edit().putString(providerKey(providerId), payload).apply()
     }
 
-    fun getApiKey(): String? {
-        val payload = prefs.getString(KEY_API, null) ?: return null
+    fun clearProviderKey(providerId: String) {
+        prefs.edit().remove(providerKey(providerId)).apply()
+    }
+
+    fun getProviderKey(providerId: String): String? {
+        val storedKey = providerKey(providerId)
+        val payload = prefs.getString(storedKey, null)
+            ?: if (providerId == "gemini") prefs.getString(LEGACY_GEMINI_KEY, null) else null
+            ?: return null
         return try {
             val parts = payload.split(SEPARATOR, limit = 2)
             if (parts.size != 2) return null
@@ -50,15 +65,9 @@ class SecureStorage(context: Context) {
             String(cipher.doFinal(encrypted), StandardCharsets.UTF_8)
         } catch (_: Exception) {
             // A reset/invalidated Keystore key must never crash app startup.
-            prefs.edit().remove(KEY_API).apply()
+            prefs.edit().remove(providerKey(providerId)).apply()
             null
         }
-    }
-
-    fun hasApiKey(): Boolean = !getApiKey().isNullOrBlank()
-
-    fun clearApiKey() {
-        prefs.edit().remove(KEY_API).apply()
     }
 
     private fun getOrCreateSecretKey(): SecretKey {
@@ -83,9 +92,11 @@ class SecureStorage(context: Context) {
         const val ANDROID_KEYSTORE = "AndroidKeyStore"
         const val KEY_ALIAS = "neo_gpt_api_key"
         const val PREFS_NAME = "neo_secure_prefs"
-        const val KEY_API = "gemini_api_key"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
         const val GCM_TAG_BITS = 128
         const val SEPARATOR = ":"
+        const val LEGACY_GEMINI_KEY = "gemini_api_key"
+
+        fun providerKey(providerId: String): String = "api_key_${providerId.lowercase()}"
     }
 }

@@ -1,117 +1,73 @@
 package com.neogpt.app.ui.screens.splash
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.neogpt.app.R
 import com.neogpt.app.ui.theme.NeoFontFamily
 import kotlinx.coroutines.delay
-import kotlin.math.sin
 
-/** Premium in-app launch animation. The Android starting window remains visually neutral. */
+/** Material 3 launch surface: tonal container, elevated brand mark and restrained motion. */
 @Composable
 fun SplashScreen(onNavigate: () -> Unit) {
-    val transition = rememberInfiniteTransition(label = "neo-launch")
-    val pulse by transition.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "logo-pulse",
-    )
-    val rotation by transition.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "logo-rotation",
-    )
-    val shimmer by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "dots",
-    )
-
+    var visible by remember { mutableStateOf(false) }
+    val transition = rememberInfiniteTransition(label = "splash-motion")
+    val pulse by transition.animateFloat(0.96f, 1.04f, infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
+    val rotate by transition.animateFloat(-2f, 2f, infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "rotate")
+    val ringAlpha by transition.animateFloat(0.25f, 0.55f, infiniteRepeatable(tween(1200), RepeatMode.Reverse), label = "ring-alpha")
     LaunchedEffect(Unit) {
-        delay(1450L)
+        visible = true
+        delay(1350L)
         onNavigate()
     }
-
-    val background = MaterialTheme.colorScheme.background
     val primary = MaterialTheme.colorScheme.primary
-    val onBackground = MaterialTheme.colorScheme.onBackground
-    val iconPainter = painterResource(R.drawable.neo_app_icon)
-
-    Box(
-        modifier = Modifier.fillMaxSize().background(background),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = iconPainter,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(128.dp)
-                    .clip(CircleShape)
-                    .scale(pulse)
-                    .graphicsLayer { rotationZ = rotation },
-            )
-            Spacer(Modifier.height(26.dp))
-            Text(
-                text = "Neo GPT",
-                color = onBackground,
-                style = MaterialTheme.typography.displaySmall,
-                fontFamily = NeoFontFamily,
-            )
-            Spacer(Modifier.height(14.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                repeat(3) { index ->
-                    val phase = (shimmer + index * 0.28f) % 1f
-                    val alpha = 0.28f + sin(phase * Math.PI).toFloat() * 0.72f
-                    Box(
-                        Modifier
-                            .size(if (index == 1) 7.dp else 5.dp)
-                            .alpha(alpha)
-                            .background(primary, CircleShape),
-                    )
+    val container = MaterialTheme.colorScheme.primaryContainer
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
+        AnimatedVisibility(visible, enter = fadeIn(tween(420)) + scaleIn(tween(520), initialScale = 0.88f)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(178.dp), contentAlignment = Alignment.Center) {
+                    Surface(
+                        Modifier.size(166.dp).alpha(ringAlpha).rotate(rotate),
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        border = BorderStroke(1.5.dp, primary.copy(alpha = 0.45f)),
+                    ) {}
+                    Surface(
+                        Modifier.size(140.dp).scale(pulse),
+                        shape = CircleShape,
+                        color = container,
+                        tonalElevation = 5.dp,
+                        shadowElevation = 12.dp,
+                    ) {
+                        Box(Alignment.Center) { Image(painterResource(R.drawable.neo_app_icon), null, Modifier.size(116.dp)) }
+                    }
+                }
+                Spacer(Modifier.height(26.dp))
+                Text("Neo GPT", style = MaterialTheme.typography.headlineLarge, fontFamily = NeoFontFamily)
+                Spacer(Modifier.height(8.dp))
+                Text("Your intelligent voice-first assistant", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(20.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(3) { index ->
+                        val alpha by transition.animateFloat(0.28f, 1f, infiniteRepeatable(tween(900, delayMillis = index * 180), RepeatMode.Reverse), label = "dot-$index")
+                        Surface(Modifier.size(if (index == 1) 7.dp else 5.dp).alpha(alpha), shape = CircleShape, color = primary) {}
+                    }
                 }
             }
         }

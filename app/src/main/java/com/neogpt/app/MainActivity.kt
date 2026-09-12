@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NeoGPTTheme {
+            NeoGPTTheme(themeMode = com.neogpt.app.ui.theme.NeoThemeMode.System, dynamicColor = true) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()

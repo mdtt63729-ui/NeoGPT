@@ -74,3 +74,24 @@ The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implemen
 - Fixed `NeoDrawer` missing `dp` and `clip` imports reported by the release compiler.
 - Fixed the splash `painterResource` call that was incorrectly wrapped in `remember`, which caused a composable-scope compiler error with the current Compose toolchain.
 - Kept the V7 startup hardening, Android Keystore API-key storage, system-following Material 3 theme, supplied Neo GPT artwork, and release-only unsigned APK workflow unchanged.
+
+
+## V9 — Premium composer, voice, attachments & Live UI
+- Home and new-chat empty states now share the same premium Material 3 visual language.
+- Composer action morphs between Live Conversation, Send, and Stop with animated transitions.
+- Voice input uses Android SpeechRecognizer with partial transcription, a visible listening state, manual stop, and a two-second silence completion target.
+- The composer plus button opens the Android document picker; selected files travel into the chat and are uploaded through Gemini Files API before prompting.
+- Live Conversation now has a dedicated animated Material 3 orb/transcript UI. Gemini Live transport/audio is intentionally left as the next integration step.
+- Splash redesigned around the supplied Neo GPT artwork with restrained Material 3 tonal/elevation motion.
+- Android framework startup theme follows system Light/Dark while Compose uses system theme + dynamic Material colors.
+
+## V10 — Multi-provider AI, Gemini 3 refresh & premium response rendering
+- Replaced the old Gemini 2.x model defaults with the current Gemini 3 Flash family used by the app: Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.5 Flash and the official 3.5 Flash-Lite endpoint.
+- Added an explicitly disabled catalogue entry for the requested `gemini-3.7-flash-lite` name because Google currently publishes `gemini-3.5-flash-lite` rather than a 3.7 Flash-Lite endpoint.
+- Added encrypted provider-key storage for Google Gemini, OpenRouter and NVIDIA NIM.
+- Added OpenAI-compatible streaming transport for OpenRouter (`https://openrouter.ai/api/v1`) and NVIDIA NIM (`https://integrate.api.nvidia.com/v1`) using `/chat/completions` and SSE streaming.
+- Added OpenRouter model catalogue entries supplied for this build and the supplied NVIDIA NIM model identifiers. NVIDIA specialized non-chat catalogue entries are shown but disabled so they cannot accidentally be sent to `/chat/completions`.
+- Home model picker now filters to configured providers and labels each model by provider.
+- First-launch setup now supports connecting Gemini, OpenRouter and NVIDIA instead of requiring Gemini specifically.
+- Added premium thinking state animation, streaming cursor, styled inline Markdown (bold/italic/inline code), headings, lists, quotes and code surfaces.
+- Existing Gemini Files API attachment flow remains intact for Gemini; OpenAI-compatible providers support image, PDF and text attachments where the provider/model accepts those modalities.

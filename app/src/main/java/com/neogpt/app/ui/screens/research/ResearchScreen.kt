@@ -55,11 +55,11 @@ fun ResearchScreen(onBack: () -> Unit) {
                         val source = GeminiDataSource(OkHttpClient(), { SecureStorage(context).getApiKey().orEmpty() })
                         val request = GeminiRequestMapper.buildRequest(
                             messages = listOf(Message(id = "research", role = Message.Role.USER, content = question)),
-                            model = "gemini-2.5-flash",
+                            model = "gemini-3.8-flash",
                             enableSearch = true,
                         )
                         var answer = ""
-                        source.streamGenerateContent("gemini-2.5-flash", request).collect { chunk ->
+                        source.streamGenerateContent("gemini-3.8-flash", request).collect { chunk ->
                             answer += chunk
                             withContext(kotlinx.coroutines.Dispatchers.Main) { report = answer }
                         }
