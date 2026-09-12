@@ -10,8 +10,8 @@ interface FileDao {
     fun getAllFiles(): Flow<List<FileEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertFile(file: FileEntity)
+    suspend fun insertFile(file: FileEntity): Long
 
     @Delete
-    suspend fun deleteFile(file: FileEntity)
+    suspend fun deleteFile(file: FileEntity): Int
 }

@@ -87,8 +87,11 @@ dependencies {
     implementation(libs.coroutines.android)
 
     // Room
+    // Room 2.7.1+ is required for reliable Kotlin 2.0/KSP processing.
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.sqlite)
+    implementation(libs.sqlite.ktx)
     ksp(libs.room.compiler)
 
     // Networking

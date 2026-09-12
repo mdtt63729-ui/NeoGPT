@@ -16,11 +16,11 @@ interface ChatDao {
     fun getChatsByProject(projectId: String): Flow<List<ChatEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChat(chat: ChatEntity)
+    suspend fun insertChat(chat: ChatEntity): Long
 
     @Update
-    suspend fun updateChat(chat: ChatEntity)
+    suspend fun updateChat(chat: ChatEntity): Int
 
     @Delete
-    suspend fun deleteChat(chat: ChatEntity)
+    suspend fun deleteChat(chat: ChatEntity): Int
 }

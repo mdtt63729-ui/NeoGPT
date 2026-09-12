@@ -25,3 +25,8 @@ GitHub Actions is configured in `.github/workflows/android-build.yml`.
 Compose 1.12 requires compileSdk 37 and AGP 9.x, so the project uses that toolchain rather than mixing the newer Compose libraries with AGP 8.x.
 
 The CI workflow does not request the invalid literal `platforms;android-37` package. It detects the API 37 platform revision exposed by the GitHub runner (preferring `android-37.0`) and creates the canonical `android-37` SDK path when the runner stores the preview platform under a revisioned directory.
+
+
+## Build compatibility
+
+The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implementation for the Kotlin 2.0 toolchain. Room DAO write methods return affected-row/insert IDs instead of `Unit`, avoiding the known `unexpected jvm signature V` annotation-processing failure seen with older Room/KSP combinations.

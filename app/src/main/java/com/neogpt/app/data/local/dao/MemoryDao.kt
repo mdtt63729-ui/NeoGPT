@@ -10,11 +10,11 @@ interface MemoryDao {
     fun getAllMemories(): Flow<List<MemoryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMemory(memory: MemoryEntity)
+    suspend fun insertMemory(memory: MemoryEntity): Long
 
     @Delete
-    suspend fun deleteMemory(memory: MemoryEntity)
+    suspend fun deleteMemory(memory: MemoryEntity): Int
 
     @Query("DELETE FROM memories")
-    suspend fun clearAllMemories()
+    suspend fun clearAllMemories(): Int
 }

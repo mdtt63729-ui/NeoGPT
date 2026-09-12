@@ -13,11 +13,11 @@ interface MessageDao {
     suspend fun getMessagesForChatOnce(chatId: String): List<MessageEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessage(message: MessageEntity)
+    suspend fun insertMessage(message: MessageEntity): Long
 
     @Update
-    suspend fun updateMessage(message: MessageEntity)
+    suspend fun updateMessage(message: MessageEntity): Int
 
     @Delete
-    suspend fun deleteMessage(message: MessageEntity)
+    suspend fun deleteMessage(message: MessageEntity): Int
 }

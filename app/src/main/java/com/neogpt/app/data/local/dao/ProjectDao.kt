@@ -10,8 +10,8 @@ interface ProjectDao {
     fun getAllProjects(): Flow<List<ProjectEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertProject(project: ProjectEntity)
+    suspend fun insertProject(project: ProjectEntity): Long
 
     @Delete
-    suspend fun deleteProject(project: ProjectEntity)
+    suspend fun deleteProject(project: ProjectEntity): Int
 }
