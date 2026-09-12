@@ -35,39 +35,24 @@ jobs:
           gradle-version: "9.3.1"
 
       - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+          accept-android-sdk-licenses: true
+
+      - name: Install required Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-37" \
+            "build-tools;35.0.0"
 
-          # GitHub-hosted Ubuntu runners already contain the Android SDK, but
-          # sdkmanager is not guaranteed to be on PATH. Discover it explicitly.
-          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-
-          sdkmanager_bin=""
-          if [ -x "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" ]; then
-            sdkmanager_bin="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          else
-            sdkmanager_bin="$(find "${ANDROID_SDK_ROOT}/cmdline-tools" -type f -name sdkmanager -perm -u+x 2>/dev/null | sort -V | tail -n 1 || true)"
-          fi
-
-          if [ -z "${sdkmanager_bin}" ]; then
-            echo "ERROR: Android sdkmanager was not found under ${ANDROID_SDK_ROOT}/cmdline-tools."
-            echo "Available Android SDK directories:"
-            ls -la "${ANDROID_SDK_ROOT}" || true
-            exit 1
-          fi
-
-          export PATH="$(dirname "${sdkmanager_bin}"):${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "${GITHUB_ENV}"
-          echo "PATH=${PATH}" >> "${GITHUB_ENV}"
-
-          # Accept licenses without allowing the yes|sdkmanager pipeline's
-          # normal SIGPIPE exit to fail the workflow under pipefail.
-          yes | "${sdkmanager_bin}" --licenses >/dev/null 2>&1 || true
-          "${sdkmanager_bin}" "platform-tools" "platforms;android-37" "build-tools;35.0.0"
-
-          test -d "${ANDROID_SDK_ROOT}/platforms/android-37"
-          test -d "${ANDROID_SDK_ROOT}/build-tools/35.0.0"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/.android/sdk}}"
+          test -d "$SDK_ROOT/platforms/android-37"
+          test -d "$SDK_ROOT/build-tools/35.0.0"
+          sdkmanager --version
 
       - name: Verify release-only build configuration
         shell: bash
@@ -92,7 +77,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle :app:assembleRelease --no-daemon --stacktrace --console=plain
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace --console=plain
 
       - name: Verify APK output
         shell: bash
