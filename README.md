@@ -30,3 +30,10 @@ The CI workflow does not request the invalid literal `platforms;android-37` pack
 ## Build compatibility
 
 The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implementation for the Kotlin 2.0 toolchain. Room DAO write methods return affected-row/insert IDs instead of `Unit`, avoiding the known `unexpected jvm signature V` annotation-processing failure seen with older Room/KSP combinations.
+
+## Latest CI compile fixes (V4)
+- Removed the duplicate `NeoEmptyState` composable that caused overload ambiguity.
+- Added missing Compose `dp` imports in Chat and Custom AI screens.
+- Fixed the clickable `ElevatedCard` call in Projects by using named parameters.
+- Explicitly opted into the experimental Material 3 API used by `CenterAlignedTopAppBar`.
+- The workflow still builds only the unsigned release APK.

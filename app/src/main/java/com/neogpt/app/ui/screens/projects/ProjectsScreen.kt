@@ -18,7 +18,10 @@ fun ProjectsScreen(onBack: () -> Unit, onProjectClick: (String) -> Unit, onNewPr
         NeoSectionTitle("Workspace", "${projects.size} active projects")
         if (projects.isEmpty()) NeoEmptyState(Icons.Rounded.Folder, "No projects", "Create a project to keep chats, files and instructions together.", "Create project") { showAdd = true }
         projects.forEachIndexed { index, name ->
-            ElevatedCard(Modifier.fillMaxWidth().padding(bottom = NeoSpacing.sm), onClick = { onProjectClick(index.toString()) }) {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth().padding(bottom = NeoSpacing.sm),
+                onClick = { onProjectClick(index.toString()) },
+            ) {
                 ListItem(
                     headlineContent = { Text(name) },
                     supportingContent = { Text("Chats, files and instructions") },
