@@ -105,6 +105,14 @@ jobs:
           test -f app/build.gradle.kts
           test -s app/src/main/res/font/josefin_sans_regular.ttf
 
+          # Guard against framework-style references that are unavailable in
+          # the API 37 platform package used by CI. The app uses the stable
+          # API-21+ Material framework base style instead.
+          if grep -R --line-number 'android:style/Theme.Material.DayNight.NoActionBar' app/src/main/res; then
+            echo 'ERROR: unsupported Theme.Material.DayNight.NoActionBar reference remains.'
+            exit 1
+          fi
+
       - name: Build unsigned release APK only
         shell: bash
         run: |
