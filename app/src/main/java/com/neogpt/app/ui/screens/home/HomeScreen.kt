@@ -11,6 +11,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -30,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import com.neogpt.app.R
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import com.neogpt.app.ui.components.*
 import com.neogpt.app.ui.theme.NeoFontFamily
 import com.neogpt.app.ui.theme.NeoShapes
@@ -80,11 +83,11 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
     val listening = voiceState == VoiceState.LISTENING || voiceState == VoiceState.PROCESSING
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Surface(onClick = onOpenDrawer, modifier = Modifier.size(48.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp) { Box(Alignment.Center) { Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(25.dp)) } }
-            Surface(onClick = { showModelPicker = true }, shape = NeoShapes.pill, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp) {
+            NeoLiquidGlass(Modifier.size(48.dp), shape = CircleShape) { Box(Modifier.fillMaxSize().clickable(onClick = onOpenDrawer), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(25.dp)) } }
+            NeoLiquidGlass(shape = NeoShapes.pill, modifier = Modifier.clickable { showModelPicker = true }) {
                 Row(Modifier.padding(horizontal = 17.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Text(state.selectedModel.name, style = MaterialTheme.typography.labelLarge); Spacer(Modifier.width(3.dp)); Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp)) }
             }
-            Surface(onClick = { onOpenChat(state.selectedModel.id, "", "", "", "") }, modifier = Modifier.size(48.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp) { Box(Alignment.Center) { Icon(Icons.Rounded.AddComment, "New chat", Modifier.size(23.dp)) } }
+            NeoLiquidGlass(Modifier.size(48.dp), shape = CircleShape) { Box(Modifier.fillMaxSize().clickable { onOpenChat(state.selectedModel.id, "", "", "", "") }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.AddComment, "New chat", Modifier.size(23.dp)) } }
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding().navigationBarsPadding().padding(horizontal = NeoSpacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -108,6 +111,11 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                     }
                 },
                 onAddClick = { filePicker.launch(arrayOf("image/*", "application/pdf", "text/*", "audio/*", "video/*", "application/octet-stream")) },
+                onImageClick = {
+                    if (!composerText.trimStart().startsWith("/image", ignoreCase = true)) {
+                        composerText = if (composerText.isBlank()) "/image " else "/image ${composerText.trimStart()}"
+                    }
+                },
                 onVoiceClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) voiceManager?.startListening() else recordPermission.launch(Manifest.permission.RECORD_AUDIO) },
                 onVoiceStop = { voiceManager?.stopListening() },
                 isListening = listening, voiceTranscript = voiceTranscript,

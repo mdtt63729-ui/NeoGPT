@@ -55,7 +55,7 @@ fun SplashScreen(onNavigate: () -> Unit) {
                         tonalElevation = 5.dp,
                         shadowElevation = 12.dp,
                     ) {
-                        Box(Alignment.Center) { Image(painterResource(R.drawable.neo_app_icon), null, Modifier.size(116.dp)) }
+                        Box(contentAlignment = Alignment.Center) { Image(painterResource(R.drawable.neo_app_icon), null, Modifier.size(116.dp)) }
                     }
                 }
                 Spacer(Modifier.height(26.dp))

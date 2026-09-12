@@ -69,6 +69,7 @@ enum class NeoThemeMode { Dark, Light, System, Amoled }
 fun NeoGPTTheme(
     themeMode: NeoThemeMode = NeoThemeMode.System,
     dynamicColor: Boolean = true,
+    liquidGlass: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -78,14 +79,26 @@ fun NeoGPTTheme(
         NeoThemeMode.System -> isSystemInDarkTheme()
     }
 
-    val colorScheme = when {
+    val baseColorScheme = when {
+        themeMode == NeoThemeMode.Amoled -> NeoAmoledColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        themeMode == NeoThemeMode.Amoled -> NeoAmoledColorScheme
         isDark -> NeoDarkColorScheme
         else -> NeoLightColorScheme
     }
+
+    val colorScheme = if (liquidGlass) {
+        baseColorScheme.copy(
+            background = baseColorScheme.background.copy(alpha = if (isDark) 0.94f else 0.96f),
+            surface = baseColorScheme.surface.copy(alpha = if (isDark) 0.72f else 0.78f),
+            surfaceVariant = baseColorScheme.surfaceVariant.copy(alpha = 0.78f),
+            surfaceContainer = baseColorScheme.surfaceContainer.copy(alpha = 0.74f),
+            surfaceContainerHigh = baseColorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
+            surfaceContainerHighest = baseColorScheme.surfaceContainerHighest.copy(alpha = 0.82f),
+            outline = baseColorScheme.outline.copy(alpha = 0.72f),
+        )
+    } else baseColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {

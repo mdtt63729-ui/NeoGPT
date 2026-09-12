@@ -1,0 +1,73 @@
+package com.neogpt.app.settings
+
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class AppSettings private constructor(context: Context) {
+    private val prefs = context.applicationContext.getSharedPreferences("neo_ui_settings", Context.MODE_PRIVATE)
+    private val _state = MutableStateFlow(readState())
+    val state: StateFlow<State> = _state.asStateFlow()
+
+    fun setThemeMode(v: ThemeMode) = update { it.copy(themeMode = v) }
+    fun setDynamicColor(v: Boolean) = update { it.copy(dynamicColor = v) }
+    fun setLiquidGlass(v: Boolean) = update { it.copy(liquidGlass = v) }
+    fun setAnimations(v: Boolean) = update { it.copy(animations = v) }
+    fun setAutoScroll(v: Boolean) = update { it.copy(autoScroll = v) }
+    fun setHaptics(v: Boolean) = update { it.copy(haptics = v) }
+    fun setEnterToSend(v: Boolean) = update { it.copy(enterToSend = v) }
+    fun setShowTimestamps(v: Boolean) = update { it.copy(showTimestamps = v) }
+
+    private fun update(transform: (State) -> State) {
+        val next = transform(_state.value)
+        _state.value = next
+        prefs.edit()
+            .putString("theme", next.themeMode.name)
+            .putBoolean("dynamic", next.dynamicColor)
+            .putBoolean("glass", next.liquidGlass)
+            .putBoolean("animations", next.animations)
+            .putBoolean("auto_scroll", next.autoScroll)
+            .putBoolean("haptics", next.haptics)
+            .putBoolean("enter_send", next.enterToSend)
+            .putBoolean("timestamps", next.showTimestamps)
+            .apply()
+    }
+
+    private fun readState(): State = State(
+        themeMode = runCatching { ThemeMode.valueOf(prefs.getString("theme", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name) }.getOrDefault(ThemeMode.SYSTEM),
+        dynamicColor = prefs.getBoolean("dynamic", true),
+        liquidGlass = prefs.getBoolean("glass", false),
+        animations = prefs.getBoolean("animations", true),
+        autoScroll = prefs.getBoolean("auto_scroll", true),
+        haptics = prefs.getBoolean("haptics", true),
+        enterToSend = prefs.getBoolean("enter_send", true),
+        showTimestamps = prefs.getBoolean("timestamps", false),
+    )
+
+    data class State(
+        val themeMode: ThemeMode,
+        val dynamicColor: Boolean,
+        val liquidGlass: Boolean,
+        val animations: Boolean,
+        val autoScroll: Boolean,
+        val haptics: Boolean,
+        val enterToSend: Boolean,
+        val showTimestamps: Boolean,
+    )
+
+    enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
+
+    companion object {
+        @Volatile private var instance: AppSettings? = null
+        fun get(context: Context): AppSettings = instance ?: synchronized(this) {
+            instance ?: AppSettings(context).also { instance = it }
+        }
+    }
+}
+
+@Composable
+fun rememberAppSettingsState(context: Context): AppSettings.State =
+    AppSettings.get(context).state.collectAsState().value

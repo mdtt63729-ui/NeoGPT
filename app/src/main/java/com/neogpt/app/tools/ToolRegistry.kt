@@ -3,6 +3,11 @@ package com.neogpt.app.tools
 import com.neogpt.app.domain.model.ToolResult
 
 class ToolRegistry {
+    init {
+        register(FileTool())
+        register(ZipTool())
+    }
+
     private val tools = mutableMapOf<String, Tool>()
 
     fun register(tool: Tool) {

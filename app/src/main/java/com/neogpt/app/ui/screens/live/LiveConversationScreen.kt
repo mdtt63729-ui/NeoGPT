@@ -36,7 +36,7 @@ fun LiveConversationScreen(modelId: String, onBack: () -> Unit) {
                     drawCircle(primary.copy(alpha = 0.08f), radius = size.minDimension * 0.46f, style = Stroke(width = 2.dp.toPx()))
                 }
                 Surface(Modifier.size(184.dp).scale(if (active) pulse else 1f), shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, tonalElevation = 6.dp, shadowElevation = 10.dp) {
-                    Box(Alignment.Center) { Icon(Icons.Rounded.GraphicEq, null, Modifier.size(76.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer) }
+                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.GraphicEq, null, Modifier.size(76.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer) }
                 }
             }
             Spacer(Modifier.height(30.dp))

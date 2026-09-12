@@ -12,6 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
 
@@ -62,33 +69,39 @@ fun NeoFeatureCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        shape = NeoShapes.large,
-        onClick = onClick,
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            Modifier.padding(NeoSpacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = NeoShapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
+    val ui = neoUiSettings()
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val haptic = LocalHapticFeedback.current
+    val click = { if (ui.haptics) haptic.performHapticFeedback(HapticFeedbackType.VirtualKey); onClick() }
+    val scale = if (ui.animations && pressed) .985f else 1f
+    if (ui.liquidGlass) {
+        NeoLiquidGlass(modifier = modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale }, shape = NeoShapes.large) {
+            Surface(onClick = click, color = Color.Transparent, shape = NeoShapes.large, interactionSource = source) {
+                FeatureCardContent(icon, title, description)
             }
-            Spacer(Modifier.width(NeoSpacing.md))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(2.dp))
-                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    } else ElevatedCard(
+        modifier = modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale }, shape = NeoShapes.large, onClick = click,
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        interactionSource = source,
+    ) { FeatureCardContent(icon, title, description) }
+
+}
+
+@Composable
+private fun FeatureCardContent(icon: ImageVector, title: String, description: String) {
+    Row(Modifier.padding(NeoSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
+        Surface(modifier = Modifier.size(48.dp), shape = NeoShapes.medium, color = MaterialTheme.colorScheme.primaryContainer) {
+            Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
+        }
+        Spacer(Modifier.width(NeoSpacing.md))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

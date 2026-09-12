@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.neogpt.app.ui.theme.NeoSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,13 +29,15 @@ fun NeoTopBar(
     onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val ui = neoUiSettings()
     CenterAlignedTopAppBar(
         modifier = modifier,
         title = {
             Surface(
                 onClick = onTitleClick,
                 shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                color = if (ui.liquidGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                border = if (ui.liquidGlass) androidx.compose.foundation.BorderStroke(0.7.dp, Color.White.copy(alpha = 0.18f)) else null,
             ) {
                 Row(
                     Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

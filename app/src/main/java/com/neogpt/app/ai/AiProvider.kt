@@ -3,6 +3,7 @@ package com.neogpt.app.ai
 import android.net.Uri
 
 enum class AiProvider(val id: String, val displayName: String, val baseUrl: String) {
+    NEO_ALPHA("neo", "Neo Built-in", ""),
     GEMINI("gemini", "Google Gemini", "https://generativelanguage.googleapis.com"),
     OPENROUTER("openrouter", "OpenRouter", "https://openrouter.ai/api/v1"),
     NVIDIA("nvidia", "NVIDIA NIM", "https://integrate.api.nvidia.com/v1");

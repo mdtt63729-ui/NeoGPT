@@ -55,6 +55,9 @@ data class NeoMessageData(
     val content: String,
     val isStreaming: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
+    val imageUrl: String? = null,
+    val isImageGenerating: Boolean = false,
+    val imageCreated: Boolean = false,
 )
 
 @Composable
@@ -68,6 +71,7 @@ fun NeoMessage(
     onLike: () -> Unit = {},
     onDislike: () -> Unit = {},
     onMore: () -> Unit = {},
+    onDownloadImage: () -> Unit = {},
 ) {
     var showToolbar by remember { mutableStateOf(false) }
 
@@ -119,8 +123,17 @@ fun NeoMessage(
                             markdown = message.content,
                             isStreaming = message.isStreaming,
                         )
-                    } else if (message.isStreaming) {
+                    } else if (message.isStreaming && !message.isImageGenerating) {
                         NeoThinkingIndicator()
+                    }
+                    if (message.isImageGenerating || message.imageUrl != null) {
+                        Spacer(modifier = Modifier.height(NeoSpacing.sm))
+                        NeoImageGenerationCard(
+                            imageUrl = message.imageUrl,
+                            isGenerating = message.isImageGenerating,
+                            imageCreated = message.imageCreated,
+                            onDownload = onDownloadImage,
+                        )
                     }
                     // Streaming cursor
                     if (message.isStreaming && message.content.isNotEmpty()) {

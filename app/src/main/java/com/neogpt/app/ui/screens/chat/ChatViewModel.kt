@@ -5,11 +5,16 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neogpt.app.ai.AiModelRef
 import com.neogpt.app.ai.AiProvider
 import com.neogpt.app.data.remote.gemini.GeminiDataSource
+import com.neogpt.app.data.remote.neo.NeoAlphaDataSource
 import com.neogpt.app.data.remote.gemini.GeminiRequestMapper
 import com.neogpt.app.data.remote.openai.OpenAiCompatibleDataSource
 import com.neogpt.app.domain.model.Attachment
@@ -25,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -33,8 +39,8 @@ import java.util.concurrent.TimeUnit
 data class ChatUiState(
     val messages: List<NeoMessageData> = emptyList(),
     val isGenerating: Boolean = false,
-    val modelName: String = "Gemini 3.8 Flash",
-    val modelId: String = "gemini:gemini-3.8-flash",
+    val modelName: String = NeoAlphaDataSource.DISPLAY_NAME,
+    val modelId: String = "neo:neo-4.1-alpha",
     val activeMode: ComposerMode? = null,
     val error: String? = null,
 )
@@ -54,6 +60,10 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
 
     fun sendMessage(text: String, pendingAttachments: List<PendingAttachment> = emptyList()) {
         if ((text.isBlank() && pendingAttachments.isEmpty()) || _state.value.isGenerating) return
+        if (modelRef.provider.name == "GEMINI" && modelRef.modelId == "none") {
+            _state.update { it.copy(error = "No AI provider is configured. Open Settings and add an API key, or use Admin login to unlock Neo 4.1 Alpha.") }
+            return
+        }
         val prompt = text.trim()
         val user = NeoMessageData(
             id = "${System.currentTimeMillis()}-u",
@@ -66,9 +76,14 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         generationJob?.cancel()
         generationJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                when (modelRef.provider) {
-                    AiProvider.GEMINI -> generateGemini(aiId, pendingAttachments)
-                    AiProvider.OPENROUTER, AiProvider.NVIDIA -> generateOpenAiCompatible(aiId, pendingAttachments)
+                when {
+                    prompt.trimStart().startsWith("/image", ignoreCase = true) -> generateNeoImage(aiId, prompt)
+                    modelRef.provider == AiProvider.NEO_ALPHA -> generateNeoAlpha(aiId, prompt)
+                    else -> when (modelRef.provider) {
+                        AiProvider.GEMINI -> generateGemini(aiId, pendingAttachments)
+                        AiProvider.OPENROUTER, AiProvider.NVIDIA -> generateOpenAiCompatible(aiId, pendingAttachments)
+                        AiProvider.NEO_ALPHA -> generateNeoAlpha(aiId, prompt)
+                    }
                 }
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) return@launch
@@ -77,10 +92,34 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         }
     }
 
+    private suspend fun generateNeoImage(aiId: String, prompt: String) {
+        val description = prompt.trim().drop(6).trim()
+        if (description.isBlank()) error("Add a description after /image.")
+        updateImageGenerating(aiId)
+        val image = NeoAlphaDataSource(client).generateImage(description)
+        updateImageResult(aiId, image.imageUrl)
+    }
+
+    private suspend fun generateNeoAlpha(aiId: String, prompt: String) {
+        val source = NeoAlphaDataSource(client)
+        val result = source.chat(prompt)
+        val responseText = result.text.trim()
+        if (responseText.startsWith("/image", ignoreCase = true)) {
+            val description = responseText.substring(6).trim()
+            if (description.isBlank()) error("Neo 4.1 Alpha returned an empty image description.")
+            updateImageGenerating(aiId)
+            val image = source.generateImage(description)
+            updateImageResult(aiId, image.imageUrl)
+        } else {
+            updateStreaming(aiId, result.text)
+            finishStreaming()
+        }
+    }
+
     private suspend fun generateGemini(aiId: String, pendingAttachments: List<PendingAttachment>) {
         val key = storage.getProviderKey(AiProvider.GEMINI.id).orEmpty()
         if (key.isBlank()) error("Gemini API key is not configured. Open Settings and add one.")
-        val source = GeminiDataSource(client) { storage.getProviderKey(AiProvider.GEMINI.id).orEmpty() }
+        val source = GeminiDataSource(client, apiKeyProvider = { storage.getProviderKey(AiProvider.GEMINI.id).orEmpty() })
         val messages = historyWithPendingAttachments(pendingAttachments, source)
         val request = GeminiRequestMapper.buildRequest(messages, modelRef.modelId)
         var accumulated = ""
@@ -151,13 +190,69 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         _state.update { current -> current.copy(messages = current.messages.map { m -> if (m.id == aiId) m.copy(content = content, isStreaming = true) else m }) }
     }
 
+    private fun updateImageGenerating(aiId: String) {
+        _state.update { current -> current.copy(messages = current.messages.map { m -> if (m.id == aiId) m.copy(content = "", isStreaming = false, isImageGenerating = true, imageUrl = null, imageCreated = false) else m }) }
+    }
+
+    private fun updateImageResult(aiId: String, imageUrl: String) {
+        _state.update { current -> current.copy(isGenerating = false, messages = current.messages.map { m -> if (m.id == aiId) m.copy(isStreaming = false, isImageGenerating = false, imageUrl = imageUrl, imageCreated = true) else m }) }
+    }
+
     private fun finishStreaming() {
         _state.update { current -> current.copy(isGenerating = false, messages = current.messages.map { m -> if (m.isStreaming) m.copy(isStreaming = false) else m }) }
     }
 
-    fun stopGeneration() { generationJob?.cancel(); generationJob = null; _state.update { it.copy(isGenerating = false, messages = it.messages.map { m -> if (m.isStreaming) m.copy(isStreaming = false) else m }) } }
+    fun stopGeneration() {
+        generationJob?.cancel(); generationJob = null
+        _state.update { current ->
+            current.copy(
+                isGenerating = false,
+                messages = current.messages.filterNot { it.isImageGenerating }.map { m -> if (m.isStreaming) m.copy(isStreaming = false) else m },
+            )
+        }
+    }
     fun copyMessage(messageId: String) { val text = _state.value.messages.firstOrNull { it.id == messageId }?.content ?: return; (appContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Neo GPT", text)) }
     fun shareMessage(messageId: String) { val text = _state.value.messages.firstOrNull { it.id == messageId }?.content ?: return; val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text); addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }; appContext.startActivity(Intent.createChooser(intent, "Share response").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    fun downloadImage(imageUrl: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val request = okhttp3.Request.Builder().url(imageUrl).get().build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) error("Image download failed (HTTP ${response.code}).")
+                    val body = response.body ?: error("Generated image has no data.")
+                    val resolver = appContext.contentResolver
+                    val fileName = "NeoGPT_${System.currentTimeMillis()}.png"
+                    val values = ContentValues().apply {
+                        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/NeoGPT")
+                            put(MediaStore.Images.Media.IS_PENDING, 1)
+                        }
+                    }
+                    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                        ?: error("Could not create a gallery file.")
+                    try {
+                        resolver.openOutputStream(uri)?.use { output -> body.byteStream().use { input -> input.copyTo(output) } }
+                            ?: error("Could not open gallery output.")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
+                        }
+                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            android.widget.Toast.makeText(appContext, "Image saved to Pictures/NeoGPT", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (t: Throwable) {
+                        resolver.delete(uri, null, null)
+                        throw t
+                    }
+                }
+            }.onFailure { error ->
+                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(appContext, error.message ?: "Could not download image.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
     fun regenerateMessage(messageId: String) { val index = _state.value.messages.indexOfFirst { it.id == messageId }; if (index <= 0) return; val prompt = _state.value.messages.take(index).lastOrNull { it.role == MessageRole.USER }?.content ?: return; _state.update { it.copy(messages = it.messages.take(index)) }; sendMessage(prompt) }
     fun editMessage(messageId: String) {}
     fun likeMessage(messageId: String) {}
@@ -167,6 +262,7 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
     companion object {
         private fun attachmentType(mime: String): Attachment.Type = when { mime.startsWith("image/") -> Attachment.Type.IMAGE; mime.startsWith("audio/") -> Attachment.Type.AUDIO; mime.startsWith("video/") -> Attachment.Type.VIDEO; else -> Attachment.Type.FILE }
         fun modelDisplayName(id: String): String {
+            if (id == "neo:neo-4.1-alpha") return NeoAlphaDataSource.DISPLAY_NAME
             val ref = AiModelRef.parse(id)
             return ref.modelId.substringAfterLast('/').removeSuffix(":free").replace('-', ' ').replaceFirstChar { it.uppercase() }
         }

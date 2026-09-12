@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
+import androidx.compose.ui.platform.LocalContext
+import com.neogpt.app.settings.rememberAppSettingsState
 
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.draw.scale
@@ -45,8 +47,9 @@ fun NeoButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val appSettings = rememberAppSettingsState(LocalContext.current)
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
+        targetValue = if (appSettings.animations && isPressed) 0.94f else 1f,
         animationSpec = spring(
             dampingRatio = 0.6f,
             stiffness = Spring.StiffnessMedium,

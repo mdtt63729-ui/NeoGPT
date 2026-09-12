@@ -34,25 +34,34 @@ enum class AttachmentType { IMAGE, FILE, AUDIO, VIDEO }
 
 @Composable
 fun NeoComposer(
-    text: String, onTextChange: (String) -> Unit, onSend: () -> Unit, onAddClick: () -> Unit,
+    text: String, onTextChange: (String) -> Unit, onSend: () -> Unit, onAddClick: () -> Unit, onImageClick: () -> Unit = {},
     modifier: Modifier = Modifier, onVoiceClick: () -> Unit = {}, onVoiceStop: () -> Unit = {},
     isListening: Boolean = false, voiceTranscript: String = "", onLiveClick: () -> Unit = {},
     isGenerating: Boolean = false, onStop: () -> Unit = {}, attachments: List<AttachmentChip> = emptyList(),
     onRemoveAttachment: (String) -> Unit = {}, activeMode: ComposerMode? = null,
     placeholder: String = "Ask anything…",
+    enterToSend: Boolean = true,
 ) {
-    val actionScale by animateFloatAsState(
-        targetValue = if (text.isNotBlank() || isGenerating) 1f else 0.94f,
-        animationSpec = spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMedium),
-        label = "composer-action-scale",
-    )
-    Surface(
-        modifier = modifier.fillMaxWidth().padding(horizontal = NeoSpacing.lg),
-        shape = NeoShapes.pill,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 1.dp,
-        shadowElevation = 2.dp,
+    val ui = neoUiSettings()
+    if (ui.liquidGlass) {
+        NeoLiquidGlass(modifier = modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm), shape = NeoShapes.pill) {
+            ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
+        }
+    } else Surface(
+        modifier = modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm), shape = NeoShapes.pill,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp, shadowElevation = 2.dp,
     ) {
+        ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
+    }
+}
+
+@Composable
+private fun ComposerContent(
+    text: String, onTextChange: (String) -> Unit, onSend: () -> Unit, onAddClick: () -> Unit, onImageClick: () -> Unit,
+    modifier: Modifier, onVoiceClick: () -> Unit, onVoiceStop: () -> Unit, isListening: Boolean, voiceTranscript: String,
+    onLiveClick: () -> Unit, isGenerating: Boolean, onStop: () -> Unit, attachments: List<AttachmentChip>,
+    onRemoveAttachment: (String) -> Unit, activeMode: ComposerMode?, placeholder: String, enterToSend: Boolean,
+) {
         Column(Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm, vertical = NeoSpacing.xs)) {
             AnimatedVisibility(attachments.isNotEmpty(), enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.xs, vertical = NeoSpacing.xs), horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
@@ -66,7 +75,25 @@ fun NeoComposer(
                 Modifier.fillMaxWidth().heightIn(min = NeoDimens.composerMinHeight, max = NeoDimens.composerMaxHeight),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                NeoIconButton(Icons.Rounded.Add, onAddClick, "Add attachment")
+                Box {
+                    NeoIconButton(icon = Icons.Rounded.Add, onClick = { showAddMenu = true }, contentDescription = "Add")
+                    DropdownMenu(
+                        expanded = showAddMenu,
+                        onDismissRequest = { showAddMenu = false },
+                        shape = NeoShapes.large,
+                    ) {
+                        DropdownMenuItem(
+                            leadingIcon = { Icon(Icons.Rounded.AttachFile, null) },
+                            text = { Text("Add file") },
+                            onClick = { showAddMenu = false; onAddClick() },
+                        )
+                        DropdownMenuItem(
+                            leadingIcon = { Icon(Icons.Rounded.Image, null) },
+                            text = { Text("Generate image") },
+                            onClick = { showAddMenu = false; onImageClick() },
+                        )
+                    }
+                }
                 if (isListening) {
                     Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.Center) {
                         Text(if (voiceTranscript.isBlank()) "Listening…" else voiceTranscript, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
@@ -77,8 +104,8 @@ fun NeoComposer(
                     OutlinedTextField(
                         value = text, onValueChange = onTextChange, modifier = Modifier.weight(1f),
                         placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) }, maxLines = 5,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = KeyboardActions(onSend = { if (text.isNotBlank()) onSend() }),
+                        keyboardOptions = KeyboardOptions(imeAction = if (enterToSend) ImeAction.Send else ImeAction.Default),
+                        keyboardActions = KeyboardActions(onSend = { if (enterToSend && text.isNotBlank()) onSend() }),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
@@ -86,8 +113,8 @@ fun NeoComposer(
                         ), shape = NeoShapes.pill,
                     )
                 }
-                if (isListening) NeoIconButton(Icons.Rounded.Stop, onVoiceStop, "Stop voice input")
-                else NeoIconButton(Icons.Rounded.Mic, onVoiceClick, "Voice input")
+                if (isListening) NeoIconButton(icon = Icons.Rounded.Stop, onClick = onVoiceStop, contentDescription = "Stop voice input")
+                else NeoIconButton(icon = Icons.Rounded.Mic, onClick = onVoiceClick, contentDescription = "Voice input")
                 Spacer(Modifier.width(NeoSpacing.xs))
                 val action = when { isGenerating -> "stop"; text.isNotBlank() -> "send"; else -> "live" }
                 AnimatedContent(targetState = action, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "composer-action") { current ->
@@ -108,7 +135,6 @@ fun NeoComposer(
                     }
                 }
             }
-        }
     }
 }
 

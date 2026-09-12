@@ -7,7 +7,7 @@ class BuildManager {
     fun build(projectPath: String): BuildResult {
         val root = File(projectPath)
         if (!root.isDirectory) return BuildResult(false, "", "Project directory not found: $projectPath")
-        val command = if (File(root, "gradlew").exists()) listOf("./gradlew", "assembleDebug") else listOf("gradle", "assembleDebug")
+        val command = if (File(root, "gradlew").exists()) listOf("./gradlew", "assembleRelease") else listOf("gradle", "assembleRelease")
         return runCommand(root, command)
     }
 

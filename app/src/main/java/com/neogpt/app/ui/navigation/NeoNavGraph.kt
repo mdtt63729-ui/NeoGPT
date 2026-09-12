@@ -3,14 +3,11 @@ package com.neogpt.app.ui.navigation
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.neogpt.app.security.SecureStorage
-import com.neogpt.app.ai.AiProvider
 import com.neogpt.app.ui.screens.canvas.CanvasScreen
 import com.neogpt.app.ui.screens.chat.ChatScreen
 import com.neogpt.app.ui.screens.code.CodeScreen
@@ -24,6 +21,7 @@ import com.neogpt.app.ui.screens.projects.ProjectsScreen
 import com.neogpt.app.ui.screens.research.ResearchScreen
 import com.neogpt.app.ui.screens.search.SearchScreen
 import com.neogpt.app.ui.screens.settings.SettingsScreen
+import com.neogpt.app.ui.screens.settings.AdminLoginScreen
 import com.neogpt.app.ui.screens.setup.ApiSetupScreen
 import com.neogpt.app.ui.screens.splash.SplashScreen
 import com.neogpt.app.ui.screens.tasks.TasksScreen
@@ -33,7 +31,6 @@ fun NeoNavGraph(
     navController: NavHostController,
     onOpenDrawer: () -> Unit,
 ) {
-    val context = LocalContext.current
     NavHost(
         navController = navController,
         startDestination = NeoRoutes.SPLASH,
@@ -41,9 +38,8 @@ fun NeoNavGraph(
         composable(NeoRoutes.SPLASH, exitTransition = { fadeOut() }) {
             SplashScreen(
                 onNavigate = {
-                    val storage = SecureStorage(context)
-                    val next = if (AiProvider.entries.any { !storage.getProviderKey(it.id).isNullOrBlank() }) NeoRoutes.HOME else NeoRoutes.API_SETUP
-                    navController.navigate(next) {
+                    // Neo 4.1 Alpha is built in, so the app never requires an API key to start.
+                    navController.navigate(NeoRoutes.HOME) {
                         popUpTo(NeoRoutes.SPLASH) { inclusive = true }
                     }
                 },
@@ -69,7 +65,7 @@ fun NeoNavGraph(
             NeoRoutes.CHAT,
             arguments = listOf(
                 navArgument("chatId") { type = NavType.StringType },
-                navArgument("model") { type = NavType.StringType; defaultValue = "gemini:gemini-3.8-flash" },
+                navArgument("model") { type = NavType.StringType; defaultValue = "neo:neo-4.1-alpha" },
                 navArgument("prompt") { type = NavType.StringType; defaultValue = "" },
                 navArgument("attachmentUri") { type = NavType.StringType; defaultValue = "" },
                 navArgument("attachmentName") { type = NavType.StringType; defaultValue = "" },
@@ -79,7 +75,7 @@ fun NeoNavGraph(
             exitTransition = { slideRightExit() },
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
-            val model = backStackEntry.arguments?.getString("model") ?: "gemini:gemini-3.8-flash"
+            val model = backStackEntry.arguments?.getString("model") ?: "neo:neo-4.1-alpha"
             val prompt = backStackEntry.arguments?.getString("prompt").orEmpty()
             val attachmentUri = backStackEntry.arguments?.getString("attachmentUri").orEmpty()
             val attachmentName = backStackEntry.arguments?.getString("attachmentName").orEmpty()
@@ -125,6 +121,11 @@ fun NeoNavGraph(
         composable(NeoRoutes.FILES, enterTransition = { slideUpEnter() }) { FilesScreen(onBack = { navController.popBackStack() }) }
         composable(NeoRoutes.TASKS, enterTransition = { slideUpEnter() }) { TasksScreen(onBack = { navController.popBackStack() }) }
         composable(NeoRoutes.NOTIFICATIONS, enterTransition = { slideUpEnter() }) { NotificationsScreen(onBack = { navController.popBackStack() }) }
-        composable(NeoRoutes.SETTINGS, enterTransition = { slideUpEnter() }) { SettingsScreen(onBack = { navController.popBackStack() }) }
+        composable(NeoRoutes.SETTINGS, enterTransition = { slideUpEnter() }) {
+            SettingsScreen(onBack = { navController.popBackStack() }, onAdminLogin = { navController.navigate(NeoRoutes.ADMIN_LOGIN) })
+        }
+        composable(NeoRoutes.ADMIN_LOGIN, enterTransition = { slideUpEnter() }) {
+            AdminLoginScreen(onBack = { navController.popBackStack() }, onSuccess = { navController.popBackStack() })
+        }
     }
 }

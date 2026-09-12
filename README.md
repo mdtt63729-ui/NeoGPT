@@ -95,3 +95,53 @@ The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implemen
 - First-launch setup now supports connecting Gemini, OpenRouter and NVIDIA instead of requiring Gemini specifically.
 - Added premium thinking state animation, streaming cursor, styled inline Markdown (bold/italic/inline code), headings, lists, quotes and code surfaces.
 - Existing Gemini Files API attachment flow remains intact for Gemini; OpenAI-compatible providers support image, PDF and text attachments where the provider/model accepts those modalities.
+
+## V12 — Release compile fixes
+- Fixed Android Keystore nullable-string smart-cast failure in `SecureStorage`.
+- Fixed `NeoIconButton` positional argument calls by using explicit named parameters.
+- Fixed `NeoMarkdown` `withStyle` import.
+- Fixed Home/Chat coroutine `launch` imports used by voice state collection.
+- Fixed `GeminiDataSource` construction to bind the `apiKeyProvider` trailing lambda explicitly.
+- Fixed Home model-provider filtering to use the encoded provider/model ID rather than comparing incompatible types.
+- Fixed Compose `Box(Alignment.Center)` calls to the current `contentAlignment` parameter form.
+- Release workflow remains unsigned-release-only; no debug APK task is introduced.
+
+
+## V13 — Neo 4.1 Alpha built-in model
+
+- Added **Neo 4.1 Alpha** as the first/default model.
+- Neo 4.1 Alpha uses the supplied no-user-key backend and works even when Gemini, OpenRouter, and NVIDIA keys are not configured.
+- App startup now opens Home directly because a built-in model is available. API setup remains available for optional providers.
+- Added a **Generate image** plugin to the composer + button. Selecting it automatically prefixes `/image ` to the composer text.
+- Neo image requests use the supplied image-generation backend. Natural image requests are also supported through the Neo 4.1 Alpha persona flow.
+- Added a smooth 1:1 live image-generation card, shimmer/orb animation, blur-to-sharp + fade/scale reveal, and **Image created 🖼️** status.
+- Long-press the generated image for **2 seconds** to reveal the Download image action. Images are saved to `Pictures/NeoGPT` on modern Android.
+- Composer horizontal margins were reduced so the input surface is wider on mobile screens.
+
+## V14 changes
+
+- Added a local offline Admin Login under Settings; no Firebase/backend is used.
+- Neo 4.1 Alpha is hidden from the model picker until the local admin gate is unlocked.
+- The app never shows the admin login during startup, splash, landing, or onboarding.
+- Admin credential comparison uses SHA-256 digests rather than embedding the clear-text email/password in the APK string table. This is an offline access gate, not server-grade authentication; a determined reverse engineer can still analyze the authentication implementation.
+- Added a built-in `zip` tool to the local tool registry so agent/tool orchestration can create ZIP archives from project directories.
+- BuildManager now targets `assembleRelease` rather than `assembleDebug`.
+- Added an iOS-inspired liquid-glass visual system with translucent layers, specular highlight, and fine glass borders; Android does not expose Apple's private backdrop-material implementation, so this is a native Compose approximation rather than Apple's proprietary rendering stack.
+- If no provider API key is configured and admin is not unlocked, the home model picker shows a disabled `No AI connected` state instead of exposing Neo 4.1 Alpha.
+
+
+## V15 chat streaming polish
+- Added a floating liquid-glass scroll-to-latest arrow in Chat.
+- AI streaming remains auto-pinned while the user is near the bottom; deliberate upward scrolling is respected.
+- Added a restrained active-line settle animation during streamed AI text updates to keep the response motion smooth without a distracting character-by-character effect.
+- Chat content reserves bottom space so the floating control stays clear of the composer.
+
+
+## V16 settings and live UI controls
+- Added persistent real-time Settings state: System/Light/Dark/AMOLED theme, Dynamic Material colors, Liquid Glass, animations, AI auto-scroll, Enter-to-send, haptics and timestamps.
+- Settings changes are emitted through a process-wide StateFlow and applied immediately without restarting the app.
+- Liquid Glass mode changes the app-wide Material color surfaces/backgrounds and enables glass treatment on Neo GPT core cards, top bar, composer, model controls and icon controls.
+- When Liquid Glass is off, the app returns to standard Material 3 surfaces and interaction treatment.
+- Chat auto-scroll now follows the setting and still respects deliberate upward scrolling.
+- Enter-to-send is live configurable.
+- Haptic feedback and press-scale behavior are live configurable.

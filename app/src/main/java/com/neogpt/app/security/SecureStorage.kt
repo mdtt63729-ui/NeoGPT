@@ -28,6 +28,12 @@ class SecureStorage(context: Context) {
 
     fun clearApiKey() = clearProviderKey("gemini")
 
+    fun setAdminLoggedIn(loggedIn: Boolean) {
+        prefs.edit().putBoolean(ADMIN_LOGIN_KEY, loggedIn).apply()
+    }
+
+    fun isAdminLoggedIn(): Boolean = prefs.getBoolean(ADMIN_LOGIN_KEY, false)
+
     fun saveProviderKey(providerId: String, key: String) {
         val cleanKey = key.trim()
         if (cleanKey.isEmpty()) {
@@ -48,7 +54,7 @@ class SecureStorage(context: Context) {
 
     fun getProviderKey(providerId: String): String? {
         val storedKey = providerKey(providerId)
-        val payload = prefs.getString(storedKey, null)
+        val payload: String = prefs.getString(storedKey, null)
             ?: if (providerId == "gemini") prefs.getString(LEGACY_GEMINI_KEY, null) else null
             ?: return null
         return try {
@@ -96,6 +102,7 @@ class SecureStorage(context: Context) {
         const val GCM_TAG_BITS = 128
         const val SEPARATOR = ":"
         const val LEGACY_GEMINI_KEY = "gemini_api_key"
+        const val ADMIN_LOGIN_KEY = "admin_logged_in"
 
         fun providerKey(providerId: String): String = "api_key_${providerId.lowercase()}"
     }

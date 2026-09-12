@@ -9,8 +9,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neogpt.app.ui.navigation.NeoNavGraph
+import com.neogpt.app.settings.rememberAppSettingsState
+import com.neogpt.app.ui.theme.NeoThemeMode
 import com.neogpt.app.ui.navigation.NeoRoutes
 import com.neogpt.app.ui.screens.drawer.NeoDrawer
 import com.neogpt.app.ui.theme.NeoGPTTheme
@@ -32,7 +39,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NeoGPTTheme(themeMode = com.neogpt.app.ui.theme.NeoThemeMode.System, dynamicColor = true) {
+            val settings = rememberAppSettingsState(this@MainActivity)
+            val themeMode = when (settings.themeMode) {
+                com.neogpt.app.settings.AppSettings.ThemeMode.LIGHT -> NeoThemeMode.Light
+                com.neogpt.app.settings.AppSettings.ThemeMode.DARK -> NeoThemeMode.Dark
+                com.neogpt.app.settings.AppSettings.ThemeMode.AMOLED -> NeoThemeMode.Amoled
+                com.neogpt.app.settings.AppSettings.ThemeMode.SYSTEM -> NeoThemeMode.System
+            }
+            NeoGPTTheme(themeMode = themeMode, dynamicColor = settings.dynamicColor, liquidGlass = settings.liquidGlass) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
@@ -65,6 +79,13 @@ class MainActivity : ComponentActivity() {
                     onDispose { callback.remove() }
                 }
 
+                Box(
+                    modifier = androidx.compose.ui.Modifier.fillMaxSize().background(
+                        if (settings.liquidGlass) Brush.radialGradient(
+                            colors = listOf(Color(0xFF352A66).copy(alpha = 0.28f), MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.background),
+                        ) else Brush.linearGradient(listOf(MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.background))
+                    )
+                ) {
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -81,6 +102,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         onOpenDrawer = { scope.launch { drawerState.open() } },
                     )
+                }
                 }
 
                 if (exitDialog) {

@@ -19,8 +19,9 @@ object NeoRoutes {
     const val TASKS = "tasks"
     const val NOTIFICATIONS = "notifications"
     const val SETTINGS = "settings"
+    const val ADMIN_LOGIN = "admin_login"
 
-    fun chat(chatId: String = "new", model: String = "gemini:gemini-3.8-flash", prompt: String = "", attachmentUri: String = "", attachmentName: String = "", attachmentMime: String = "") =
+    fun chat(chatId: String = "new", model: String = "neo:neo-4.1-alpha", prompt: String = "", attachmentUri: String = "", attachmentName: String = "", attachmentMime: String = "") =
         "chat/${Uri.encode(chatId)}?model=${Uri.encode(model)}&prompt=${Uri.encode(prompt)}&attachmentUri=${Uri.encode(attachmentUri)}&attachmentName=${Uri.encode(attachmentName)}&attachmentMime=${Uri.encode(attachmentMime)}"
     fun live(model: String = "gemini:gemini-3.8-flash") = "live/${Uri.encode(model)}"
     fun projectDetail(projectId: String) = "project/${Uri.encode(projectId)}"

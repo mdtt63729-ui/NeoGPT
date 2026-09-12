@@ -24,8 +24,8 @@ private data class CatalogEntry(
 
 data class HomeUiState(
     val greeting: String = "What can I help you with?",
-    val selectedModel: NeoModelInfo = HomeViewModel.catalog.first(),
-    val availableModels: List<NeoModelInfo> = HomeViewModel.catalog,
+    val selectedModel: NeoModelInfo = NeoModelInfo("none:none", "No AI connected", "Add a provider API key in Settings or unlock Neo 4.1 Alpha with admin login", "Setup", "—", listOf("text"), "System", false),
+    val availableModels: List<NeoModelInfo> = emptyList(),
     val modelsLoading: Boolean = false,
 ) 
 
@@ -39,9 +39,13 @@ class HomeViewModel(context: Context) : ViewModel() {
     }
 
     fun refreshCatalog() {
-        val configured = AiProvider.entries.filter { !storage.getProviderKey(it.id).isNullOrBlank() }.toSet()
-        val models = catalog.filter { it.provider in configured || configured.isEmpty() }
-        val safeModels = if (models.isEmpty()) catalog else models
+        val adminEnabled = storage.isAdminLoggedIn()
+        val configured = AiProvider.entries.filter { it != AiProvider.NEO_ALPHA && !storage.getProviderKey(it.id).isNullOrBlank() }.toSet()
+        val models = catalog.filter { model ->
+            val isNeo = model.id.startsWith("${AiProvider.NEO_ALPHA.id}:")
+            (isNeo && adminEnabled) || (!isNeo && configured.any { provider -> model.id.startsWith("${provider.id}:") })
+        }
+        val safeModels = if (models.isEmpty()) listOf(noModelConfigured) else models
         _state.update { current ->
             val selected = safeModels.firstOrNull { it.id == current.selectedModel.id } ?: safeModels.first()
             current.copy(availableModels = safeModels, selectedModel = selected, modelsLoading = false)
@@ -56,7 +60,10 @@ class HomeViewModel(context: Context) : ViewModel() {
         private fun c(provider: AiProvider, id: String, name: String, description: String, speed: String, context: String = "—", capabilities: List<String> = listOf("text"), available: Boolean = true) =
             NeoModelInfo(encodeModel(provider, id), name, description, speed, context, capabilities, provider.displayName, available)
 
+        val noModelConfigured = NeoModelInfo("none:none", "No AI connected", "Add a provider API key in Settings or unlock Neo 4.1 Alpha with admin login", "Setup", "—", listOf("text"), "System", false)
+
         val catalog: List<NeoModelInfo> = buildList {
+            add(c(AiProvider.NEO_ALPHA, "neo-4.1-alpha", "Neo 4.1 Alpha", "Built-in AI — works without configuring an API key", "Built-in", "—", listOf("text", "image")))
             add(c(AiProvider.GEMINI, "gemini-3.8-flash", "Gemini 3.8 Flash", "Latest stable Flash for long-horizon reasoning, coding and agents", "Fast+", "1M", listOf("text", "vision", "audio", "pdf", "thinking")))
             add(c(AiProvider.GEMINI, "gemini-3.7-flash", "Gemini 3.7 Flash", "Stable multimodal reasoning and agentic execution", "Fast", "1M", listOf("text", "vision", "audio", "pdf", "thinking")))
             add(c(AiProvider.GEMINI, "gemini-3.7-flash-lite", "Gemini 3.7 Flash-Lite", "Requested model name; Google currently publishes Gemini 3.5 Flash-Lite instead", "Unavailable", "—", listOf("text"), available = false))
