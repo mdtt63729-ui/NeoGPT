@@ -28,7 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.ui.input.pointer.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.layout.ContentScale
@@ -122,7 +121,8 @@ fun NeoImageGenerationCard(
                         .blur(blurRadius.dp)
                         .pointerInput(imageUrl) {
                             awaitEachGesture {
-                                val down = awaitFirstDown()
+                                val down = awaitPointerEvent().changes.firstOrNull { it.pressed }
+                                    ?: return@awaitEachGesture
                                 val heldForTwoSeconds = withTimeoutOrNull(2000L) {
                                     while (true) {
                                         val event = awaitPointerEvent()
