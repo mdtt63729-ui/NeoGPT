@@ -68,3 +68,9 @@ The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implemen
 - The supplied Neo GPT artwork is now the launcher/round icon and is reused subtly in the splash, Home and API setup surfaces.
 - Compose theme now follows the Android system light/dark setting. Android 12+ uses system dynamic Material colors.
 - Premium in-app splash animation remains separate from the neutral Android starting window.
+
+## V8 — CI compile repair
+
+- Fixed `NeoDrawer` missing `dp` and `clip` imports reported by the release compiler.
+- Fixed the splash `painterResource` call that was incorrectly wrapped in `remember`, which caused a composable-scope compiler error with the current Compose toolchain.
+- Kept the V7 startup hardening, Android Keystore API-key storage, system-following Material 3 theme, supplied Neo GPT artwork, and release-only unsigned APK workflow unchanged.
