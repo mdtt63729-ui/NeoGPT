@@ -67,8 +67,8 @@ enum class NeoThemeMode { Dark, Light, System, Amoled }
 
 @Composable
 fun NeoGPTTheme(
-    themeMode: NeoThemeMode = NeoThemeMode.Light,
-    dynamicColor: Boolean = false,
+    themeMode: NeoThemeMode = NeoThemeMode.System,
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current

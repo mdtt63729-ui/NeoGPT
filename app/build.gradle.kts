@@ -3,16 +3,9 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
 }
 
 android {
-    // Disable Hilt's aggregating Gradle task to avoid the JavaPoet
-    // canonicalName() binary mismatch in the Hilt 2.52 toolchain.
-    hilt {
-        enableAggregatingTask = false
-    }
-
     namespace = "com.neogpt.app"
     compileSdk = 37
 
@@ -29,8 +22,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Keep release runtime behavior deterministic while the app is being actively developed.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -108,17 +102,7 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
-    // Hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
-
-    // Error Prone annotations are referenced by Google Tink used by security-crypto.
-    // Keep them on the release runtime classpath so R8 can resolve the annotation classes.
-    implementation(libs.error.prone.annotations)
-
     // Security
-    implementation(libs.security.crypto)
 
     // Accompanist
     implementation(libs.accompanist.permissions)

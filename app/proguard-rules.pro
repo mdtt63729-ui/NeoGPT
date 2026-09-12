@@ -23,10 +23,3 @@
 -keepclasseswithmembers class * {
     @retrofit2.http.* <methods>;
 }
-
-# Security
--keep class androidx.security.crypto.** { *; }
-
-# Hilt
--keep class dagger.hilt.** { *; }
--keep class javax.inject.** { *; }

@@ -1,5 +1,6 @@
 package com.neogpt.app.ui.screens.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddComment
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -30,9 +30,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import com.neogpt.app.R
 import com.neogpt.app.ui.components.NeoComposer
 import com.neogpt.app.ui.components.NeoModelPickerSheet
 import com.neogpt.app.ui.theme.NeoFontFamily
@@ -112,6 +116,12 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
+            Image(
+                painter = painterResource(R.drawable.neo_app_icon),
+                contentDescription = null,
+                modifier = Modifier.size(64.dp).clip(CircleShape),
+            )
+            Spacer(Modifier.height(18.dp))
             Text(
                 text = "Neo GPT",
                 style = MaterialTheme.typography.displayMedium,

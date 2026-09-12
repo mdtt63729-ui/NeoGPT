@@ -22,10 +22,9 @@ fun SettingsScreen(onBack: () -> Unit) {
     var apiKey by remember { mutableStateOf(storage.getApiKey().orEmpty()) }
     var showKey by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
-    var dynamic by remember { mutableStateOf(false) }
 
     NeoPage("Settings", onBack) {
-        NeoSectionTitle("AI connection", "Your Gemini key is stored using Android encrypted preferences.")
+        NeoSectionTitle("AI connection", "Your Gemini key is encrypted with Android Keystore and stored only on this device.")
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(NeoSpacing.lg)) {
                 Text("Gemini API key", style = MaterialTheme.typography.titleMedium)
@@ -52,10 +51,9 @@ fun SettingsScreen(onBack: () -> Unit) {
         NeoSectionTitle("Appearance")
         ElevatedCard(Modifier.fillMaxWidth()) {
             ListItem(
-                headlineContent = { Text("Dynamic colors") },
-                supportingContent = { Text("Use your device's Material color palette.") },
+                headlineContent = { Text("System theme") },
+                supportingContent = { Text("Neo GPT follows your device's light or dark mode and Material colors.") },
                 leadingContent = { Icon(Icons.Rounded.Palette, null) },
-                trailingContent = { Switch(dynamic, { dynamic = it }) },
             )
         }
         Spacer(Modifier.height(NeoSpacing.md))

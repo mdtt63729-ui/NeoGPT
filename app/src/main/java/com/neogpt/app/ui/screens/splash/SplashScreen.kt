@@ -1,17 +1,12 @@
 package com.neogpt.app.ui.screens.splash
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,121 +16,103 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.neogpt.app.R
 import com.neogpt.app.ui.theme.NeoFontFamily
 import kotlinx.coroutines.delay
-import kotlin.math.cos
 import kotlin.math.sin
 
-/**
- * Fully in-app launch experience. No app icon, logo tile, or Android splash artwork is
- * rendered here; the OS starting window is intentionally kept visually neutral.
- */
+/** Premium in-app launch animation. The Android starting window remains visually neutral. */
 @Composable
-fun SplashScreen(
-    onNavigate: () -> Unit,
-) {
+fun SplashScreen(onNavigate: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "neo-launch")
-    val orbit by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(4200, easing = FastOutSlowInEasing), RepeatMode.Restart),
-        label = "orbit",
-    )
     val pulse by transition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse",
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "logo-pulse",
+    )
+    val rotation by transition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "logo-rotation",
+    )
+    val shimmer by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "dots",
     )
 
-    val primary = MaterialTheme.colorScheme.primary
-    val onBackground = MaterialTheme.colorScheme.onBackground
-    val background = MaterialTheme.colorScheme.background
-
-    var visible by remember { androidx.compose.runtime.mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        visible = true
-        delay(1450)
+        delay(1450L)
         onNavigate()
     }
 
+    val background = MaterialTheme.colorScheme.background
+    val primary = MaterialTheme.colorScheme.primary
+    val onBackground = MaterialTheme.colorScheme.onBackground
+    val iconPainter = remember { painterResource(R.drawable.neo_app_icon) }
+
     Box(
-        Modifier
-            .fillMaxSize()
-            .background(background),
+        modifier = Modifier.fillMaxSize().background(background),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.size(300.dp).alpha(0.16f)) {
-            val center = Offset(size.width / 2f, size.height / 2f)
-            val radius = size.minDimension * 0.31f
-            val a = Math.toRadians(orbit.toDouble())
-            val glowCenter = Offset(
-                center.x + cos(a).toFloat() * radius,
-                center.y + sin(a).toFloat() * radius,
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = iconPainter,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(128.dp)
+                    .clip(CircleShape)
+                    .scale(pulse)
+                    .graphicsLayer { rotationZ = rotation },
             )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(primary, Color.Transparent),
-                    center = glowCenter,
-                    radius = size.minDimension * 0.34f,
-                ),
-                radius = size.minDimension * 0.34f,
-                center = glowCenter,
+            Spacer(Modifier.height(26.dp))
+            Text(
+                text = "Neo GPT",
+                color = onBackground,
+                style = MaterialTheme.typography.displaySmall,
+                fontFamily = NeoFontFamily,
             )
-            drawArc(
-                color = primary.copy(alpha = 0.32f),
-                startAngle = orbit,
-                sweepAngle = 105f,
-                useCenter = false,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round),
-            )
-        }
-
-        AnimatedContent(
-            targetState = visible,
-            transitionSpec = { fadeIn(tween(650)) + scaleIn(tween(700), initialScale = 0.94f) togetherWith fadeOut(tween(200)) },
-            label = "launch-content",
-        ) { show ->
-            if (show) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Neo GPT",
-                        modifier = Modifier.scale(pulse),
-                        style = MaterialTheme.typography.displayLarge,
-                        fontFamily = NeoFontFamily,
-                        color = onBackground,
+            Spacer(Modifier.height(14.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                repeat(3) { index ->
+                    val phase = (shimmer + index * 0.28f) % 1f
+                    val alpha = 0.28f + sin(phase * Math.PI).toFloat() * 0.72f
+                    Box(
+                        Modifier
+                            .size(if (index == 1) 7.dp else 5.dp)
+                            .alpha(alpha)
+                            .background(primary, CircleShape),
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        repeat(3) { index ->
-                            val alpha = 0.35f + ((sin(Math.toRadians((orbit + index * 120f).toDouble())).toFloat() + 1f) / 2f) * 0.65f
-                            Box(
-                                Modifier
-                                    .size(if (index == 1) 7.dp else 5.dp)
-                                    .alpha(alpha)
-                                    .background(primary, androidx.compose.foundation.shape.CircleShape),
-                            )
-                        }
-                    }
                 }
             }
         }

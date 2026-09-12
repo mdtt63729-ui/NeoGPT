@@ -58,3 +58,13 @@ The project uses Room 2.7.1 with SQLite 2.5.0 and keeps KSP on the KSP1 implemen
 - Added the missing Compose `setValue` delegate import used by the custom splash state.
 - Moved `MaterialTheme.colorScheme` reads out of the non-`@Composable` Canvas draw lambda and into composable scope, fixing the splash `@Composable invocations can only happen from the context of a @Composable function` errors.
 - Preserved the intended behavior: drawer closes first, secondary screens pop back to the previous screen, Home requires two back presses and then shows the exit confirmation dialog.
+
+
+## V7 — Crash-safe startup, system theme & official app artwork
+
+- Startup path simplified to remove unnecessary Hilt initialization.
+- API-key storage now uses Android Keystore directly with AES-256-GCM and safely handles invalidated keys.
+- Release shrinking is disabled to prevent release-only runtime stripping while the product is under active development.
+- The supplied Neo GPT artwork is now the launcher/round icon and is reused subtly in the splash, Home and API setup surfaces.
+- Compose theme now follows the Android system light/dark setting. Android 12+ uses system dynamic Material colors.
+- Premium in-app splash animation remains separate from the neutral Android starting window.

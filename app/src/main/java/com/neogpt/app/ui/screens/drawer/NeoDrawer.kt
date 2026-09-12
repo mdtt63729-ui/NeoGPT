@@ -1,5 +1,6 @@
 package com.neogpt.app.ui.screens.drawer
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -33,7 +36,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import com.neogpt.app.R
 import com.neogpt.app.ui.navigation.NeoRoutes
 import com.neogpt.app.ui.theme.NeoDimens
 import com.neogpt.app.ui.theme.NeoFontFamily
@@ -82,18 +88,28 @@ fun NeoDrawer(
                 .padding(NeoSpacing.lg),
         ) {
             // Brand
-            Text(
-                text = "Neo GPT",
-                style = MaterialTheme.typography.headlineSmall,
-                fontFamily = NeoFontFamily,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "v1.0.0",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(R.drawable.neo_app_icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(42.dp).clip(CircleShape),
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Neo GPT",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontFamily = NeoFontFamily,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "AI workspace",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(NeoSpacing.xxl))
 
