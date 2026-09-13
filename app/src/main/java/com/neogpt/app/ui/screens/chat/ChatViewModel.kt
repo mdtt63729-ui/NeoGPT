@@ -20,6 +20,7 @@ import com.neogpt.app.data.remote.openai.OpenAiCompatibleDataSource
 import com.neogpt.app.domain.model.Attachment
 import com.neogpt.app.domain.model.Message
 import com.neogpt.app.security.SecureStorage
+import com.neogpt.app.settings.SystemPromptStore
 import com.neogpt.app.ui.components.AgentStep
 import com.neogpt.app.ui.components.AgentStepState
 import com.neogpt.app.ui.components.ComposerMode
@@ -53,6 +54,7 @@ data class ChatUiState(
 class ChatViewModel(context: Context, modelId: String) : ViewModel() {
     private val appContext = context.applicationContext
     private val storage = SecureStorage(appContext)
+    private val systemPromptStore = SystemPromptStore(appContext)
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.SECONDS)
@@ -127,7 +129,7 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
 
     private suspend fun generateNeoAlpha(aiId: String, prompt: String) {
         val source = NeoAlphaDataSource(client)
-        val result = source.chat(prompt)
+        val result = source.chat(prompt, systemPromptStore.get())
         val responseText = result.text.trim()
         if (responseText.startsWith("/image", ignoreCase = true)) {
             val description = responseText.substring(6).trim()
@@ -148,7 +150,7 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         if (key.isBlank()) error("Gemini API key is not configured. Open Settings and add one.")
         val source = GeminiDataSource(client, apiKeyProvider = { storage.getProviderKey(AiProvider.GEMINI.id).orEmpty() })
         val messages = historyWithPendingAttachments(pendingAttachments, source)
-        val request = GeminiRequestMapper.buildRequest(messages, modelRef.modelId)
+        val request = GeminiRequestMapper.buildRequest(messages, modelRef.modelId, systemPrompt = systemPromptStore.get())
         updateStep(aiId, "understand", AgentStepState.COMPLETED)
         appendStep(aiId, AgentStep("stream", "Generating response", AgentStepState.IN_PROGRESS))
         var accumulated = ""
@@ -186,7 +188,7 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         providerMessages += lastMessage
 
         var accumulated = ""
-        source.streamChat(modelRef.modelId, providerMessages).collect { chunk ->
+        source.streamChat(modelRef.modelId, providerMessages, systemPrompt = systemPromptStore.get()).collect { chunk ->
             accumulated += chunk
             updateStreaming(aiId, accumulated)
         }

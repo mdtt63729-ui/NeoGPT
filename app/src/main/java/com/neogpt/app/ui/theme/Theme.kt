@@ -88,17 +88,8 @@ fun NeoGPTTheme(
         else -> NeoLightColorScheme
     }
 
-    val colorScheme = if (liquidGlass) {
-        baseColorScheme.copy(
-            background = baseColorScheme.background.copy(alpha = if (isDark) 0.94f else 0.96f),
-            surface = baseColorScheme.surface.copy(alpha = if (isDark) 0.72f else 0.78f),
-            surfaceVariant = baseColorScheme.surfaceVariant.copy(alpha = 0.78f),
-            surfaceContainer = baseColorScheme.surfaceContainer.copy(alpha = 0.74f),
-            surfaceContainerHigh = baseColorScheme.surfaceContainerHigh.copy(alpha = 0.78f),
-            surfaceContainerHighest = baseColorScheme.surfaceContainerHighest.copy(alpha = 0.82f),
-            outline = baseColorScheme.outline.copy(alpha = 0.72f),
-        )
-    } else baseColorScheme
+    // Neo GPT uses a clean Material 3 surface system; liquid-glass translucency is removed.
+    val colorScheme = baseColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {

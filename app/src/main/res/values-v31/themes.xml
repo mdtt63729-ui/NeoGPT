@@ -4,7 +4,7 @@
          Compose splash so the framework frame is visually indistinguishable from it. -->
     <style name="Theme.NeoGPT.Starting" parent="Theme.NeoGPT">
         <item name="android:windowBackground">@color/neo_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
         <item name="android:windowSplashScreenBackground">@color/neo_background</item>
     </style>

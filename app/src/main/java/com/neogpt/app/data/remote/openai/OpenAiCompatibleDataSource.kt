@@ -24,13 +24,17 @@ class OpenAiCompatibleDataSource(
     fun streamChat(
         model: String,
         messages: List<ProviderMessage>,
+        systemPrompt: String = "",
     ): Flow<String> = flow {
         val apiKey = apiKeyProvider().trim()
         if (apiKey.isBlank()) error("$providerName API key is not configured. Open Settings and add one.")
 
         val body = JSONObject().apply {
             put("model", model)
-            put("messages", JSONArray().also { array -> messages.forEach { array.put(it.toJson()) } })
+            put("messages", JSONArray().also { array ->
+                systemPrompt.trim().takeIf { it.isNotBlank() }?.let { array.put(ProviderMessage("system", it).toJson()) }
+                messages.forEach { array.put(it.toJson()) }
+            })
             put("stream", true)
             put("temperature", 0.7)
         }.toString()

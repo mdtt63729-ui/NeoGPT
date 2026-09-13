@@ -31,6 +31,9 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
     var showOpenRouter by remember { mutableStateOf(false) }
     var showNvidia by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf<String?>(null) }
+    val systemPromptStore = remember { com.neogpt.app.settings.SystemPromptStore(context) }
+    var systemPrompt by remember { mutableStateOf(systemPromptStore.get()) }
+    var systemPromptSaved by remember { mutableStateOf(systemPrompt.isNotBlank()) }
     val adminAuth = remember { AdminAuth(context) }
     var adminLoggedIn by remember { mutableStateOf(adminAuth.isLoggedIn()) }
 
@@ -38,8 +41,6 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
             item {
         NeoSectionTitle("Appearance", "Changes apply instantly across the app.")
-        SettingSwitchCard(Icons.Rounded.WaterDrop, "Enable liquid glass design", "Use translucent glass surfaces, depth, highlights and press feedback across Neo GPT.", ui.liquidGlass) { settings.setLiquidGlass(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
         SettingSwitchCard(Icons.Rounded.AutoAwesomeMotion, "Smooth animations", "Keep Neo GPT's motion, press and transition animations enabled.", ui.animations) { settings.setAnimations(it) }
         Spacer(Modifier.height(NeoSpacing.sm))
         SettingSwitchCard(Icons.Rounded.Palette, "Dynamic Material colors", "Use Android dynamic colors when available. Turn off for Neo GPT's fixed palette.", ui.dynamicColor) { settings.setDynamicColor(it) }
@@ -54,6 +55,56 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
         SettingSwitchCard(Icons.Rounded.Vibration, "Haptic feedback", "Use subtle Android haptics for supported primary interactions.", ui.haptics) { settings.setHaptics(it) }
         Spacer(Modifier.height(NeoSpacing.sm))
         SettingSwitchCard(Icons.Rounded.Schedule, "Show message timestamps", "Display message time metadata where supported by the conversation UI.", ui.showTimestamps) { settings.setShowTimestamps(it) }
+        Spacer(Modifier.height(NeoSpacing.sm))
+        ResponseTextSizeCard(ui.responseTextScale) { settings.setResponseTextScale(it) }
+
+        NeoSectionTitle("AI behavior", "One system instruction is applied to every text-capable AI you use in Neo GPT.")
+        ElevatedCard(Modifier.fillMaxWidth(), shape = NeoShapes.large) {
+            Column(Modifier.padding(NeoSpacing.lg)) {
+                Text("Global system prompt", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(NeoSpacing.xs))
+                Text(
+                    "Describe how the AI should behave, respond, format answers, or follow your preferred rules. Neo GPT sends this as a system-level instruction where the provider supports it.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(NeoSpacing.md))
+                OutlinedTextField(
+                    value = systemPrompt,
+                    onValueChange = { systemPrompt = it; systemPromptSaved = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 6,
+                    maxLines = 12,
+                    label = { Text("System prompt") },
+                    placeholder = { Text("Example: Always answer in Bengali, be concise, and use clear bullet points…") },
+                    shape = NeoShapes.large,
+                )
+                Spacer(Modifier.height(NeoSpacing.sm))
+                Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
+                    Button(
+                        onClick = { systemPromptStore.save(systemPrompt); systemPrompt = systemPromptStore.get(); systemPromptSaved = true },
+                        enabled = systemPrompt.isNotBlank(),
+                        shape = NeoShapes.pill,
+                    ) {
+                        Icon(Icons.Rounded.Save, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (systemPromptSaved) "Saved" else "Save prompt")
+                    }
+                    if (systemPrompt.isNotBlank()) {
+                        OutlinedButton(
+                            onClick = { systemPromptStore.clear(); systemPrompt = ""; systemPromptSaved = false },
+                            shape = NeoShapes.pill,
+                        ) { Text("Clear") }
+                    }
+                }
+                Spacer(Modifier.height(NeoSpacing.xs))
+                Text(
+                    "Applied to Gemini, OpenRouter, NVIDIA NIM, Neo 4.1 Alpha, and Gemini-powered Research. Provider safety rules and higher-priority instructions can still override it.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         NeoSectionTitle("Admin access", "Neo 4.1 Alpha is hidden until local admin login is completed.")
         if (adminLoggedIn) {
@@ -80,8 +131,23 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
         Spacer(Modifier.height(NeoSpacing.lg))
         NeoFeatureCard(Icons.Rounded.Security, "Privacy & security", "Provider API keys stay in encrypted Android Keystore-backed storage.", {})
         Spacer(Modifier.height(NeoSpacing.sm))
-        NeoFeatureCard(Icons.Rounded.Info, "About Neo GPT", "Version 1.4.0 • Material 3 • Liquid Glass option • Multi-provider AI", {})
+        NeoFeatureCard(Icons.Rounded.Info, "About Neo GPT", "Version 1.4.0 • Material 3 • Multi-provider AI", {})
             }
+        }
+    }
+}
+
+@Composable
+private fun ResponseTextSizeCard(scale: Float, onChange: (Float) -> Unit) {
+    ElevatedCard(Modifier.fillMaxWidth(), shape = NeoShapes.large) {
+        Column(Modifier.padding(NeoSpacing.lg)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Response text size", style = MaterialTheme.typography.titleMedium)
+                Text("${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.height(NeoSpacing.xs))
+            Text("Adjust how large AI answers appear in chat.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Slider(value = scale, onValueChange = onChange, valueRange = 0.85f..1.25f, steps = 7)
         }
     }
 }

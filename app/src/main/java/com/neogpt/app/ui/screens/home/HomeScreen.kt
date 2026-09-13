@@ -84,20 +84,37 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
     val listening = voiceState == VoiceState.LISTENING || voiceState == VoiceState.PROCESSING
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            NeoLiquidGlass(Modifier.size(48.dp), shape = CircleShape) { Box(Modifier.fillMaxSize().clickable(onClick = onOpenDrawer), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(25.dp)) } }
-            NeoLiquidGlass(shape = NeoShapes.pill, modifier = Modifier.clickable { showModelPicker = true }) {
-                Row(Modifier.padding(horizontal = 17.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Text(state.selectedModel.name, style = MaterialTheme.typography.labelLarge); Spacer(Modifier.width(3.dp)); Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp)) }
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                onClick = onOpenDrawer,
+            ) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Menu, "Open menu", Modifier.size(24.dp)) } }
+            Surface(
+                shape = NeoShapes.pill,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                onClick = { showModelPicker = true },
+            ) {
+                Row(Modifier.padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Text(state.selectedModel.name, style = MaterialTheme.typography.labelLarge); Spacer(Modifier.width(4.dp)); Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(18.dp)) }
             }
-            NeoLiquidGlass(Modifier.size(48.dp), shape = CircleShape) { Box(Modifier.fillMaxSize().clickable { onOpenChat(state.selectedModel.id, "", "", "", "") }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.AddComment, "New chat", Modifier.size(23.dp)) } }
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                onClick = { onOpenChat(state.selectedModel.id, "", "", "", "") },
+            ) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Edit, "New chat", Modifier.size(22.dp)) } }
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding().navigationBarsPadding().padding(horizontal = NeoSpacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.weight(1f))
-            val infinite = rememberInfiniteTransition(label = "home-logo")
-            val logoScale by infinite.animateFloat(0.96f, 1.04f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "home-logo-scale")
-            Surface(Modifier.size(84.dp).graphicsLayer { scaleX = logoScale; scaleY = logoScale }, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 3.dp) {
-                Image(painterResource(R.drawable.neo_app_icon), null, Modifier.padding(10.dp).clip(CircleShape))
-            }
+            Image(
+                painter = painterResource(R.drawable.neo_app_icon),
+                contentDescription = "Neo GPT",
+                modifier = Modifier.size(92.dp),
+            )
             Spacer(Modifier.height(18.dp))
             Text("Neo GPT", style = MaterialTheme.typography.displaySmall, fontFamily = NeoFontFamily)
             Spacer(Modifier.height(8.dp))

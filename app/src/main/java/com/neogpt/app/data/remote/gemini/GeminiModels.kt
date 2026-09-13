@@ -6,6 +6,7 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class GeminiRequest(
     val contents: List<Content>,
+    @Json(name = "system_instruction") val systemInstruction: Content? = null,
     val generationConfig: GenerationConfig? = null,
     val safetySettings: List<SafetySetting>? = null,
     val tools: List<Tool>? = null,

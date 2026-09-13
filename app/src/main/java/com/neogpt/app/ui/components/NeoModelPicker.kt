@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
 
@@ -76,11 +75,10 @@ private fun NeoModelItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val ui = neoUiSettings()
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = NeoShapes.large,
-        color = if (ui.liquidGlass) Color.Transparent else if (isSelected)
+        color = if (isSelected)
             MaterialTheme.colorScheme.primaryContainer
         else
             MaterialTheme.colorScheme.surface,

@@ -1,7 +1,5 @@
 package com.neogpt.app.ui.navigation
 
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -23,7 +21,6 @@ import com.neogpt.app.ui.screens.search.SearchScreen
 import com.neogpt.app.ui.screens.settings.SettingsScreen
 import com.neogpt.app.ui.screens.settings.AdminLoginScreen
 import com.neogpt.app.ui.screens.setup.ApiSetupScreen
-import com.neogpt.app.ui.screens.splash.SplashScreen
 import com.neogpt.app.ui.screens.tasks.TasksScreen
 
 @Composable
@@ -33,19 +30,13 @@ fun NeoNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = NeoRoutes.SPLASH,
+        startDestination = NeoRoutes.HOME,
+        enterTransition = { iosEnter() },
+        exitTransition = { iosExit() },
+        popEnterTransition = { iosPopEnter() },
+        popExitTransition = { iosPopExit() },
     ) {
-        composable(NeoRoutes.SPLASH, exitTransition = { fadeOut() }) {
-            SplashScreen(
-                onNavigate = {
-                    // Neo 4.1 Alpha is built in, so the app never requires an API key to start.
-                    navController.navigate(NeoRoutes.HOME) {
-                        popUpTo(NeoRoutes.SPLASH) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(NeoRoutes.API_SETUP, enterTransition = { fadeIn() }) {
+        composable(NeoRoutes.API_SETUP, enterTransition = { iosEnter() }) {
             ApiSetupScreen(
                 onComplete = {
                     navController.navigate(NeoRoutes.HOME) {
@@ -54,7 +45,7 @@ fun NeoNavGraph(
                 },
             )
         }
-        composable(NeoRoutes.HOME, enterTransition = { fadeIn() }) {
+        composable(NeoRoutes.HOME, enterTransition = { iosEnter() }) {
             HomeScreen(
                 onOpenDrawer = onOpenDrawer,
                 onOpenChat = { model, prompt, uri, name, mime -> navController.navigate(NeoRoutes.chat(model = model, prompt = prompt, attachmentUri = uri, attachmentName = name, attachmentMime = mime)) },

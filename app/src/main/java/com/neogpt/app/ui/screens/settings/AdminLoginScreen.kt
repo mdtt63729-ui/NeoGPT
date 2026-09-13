@@ -12,7 +12,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.neogpt.app.security.AdminAuth
-import com.neogpt.app.ui.components.NeoGlassButton
 import com.neogpt.app.ui.components.NeoPage
 import com.neogpt.app.ui.theme.NeoShapes
 
@@ -48,7 +47,7 @@ fun AdminLoginScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
                     Spacer(Modifier.height(8.dp)); Text("Incorrect admin credentials.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
                 Spacer(Modifier.height(18.dp))
-                NeoGlassButton("Login", {
+                NeoButton("Login", {
                     if (auth.login(email, password)) onSuccess() else error = true
                 }, Modifier.fillMaxWidth(), icon = Icons.Rounded.AdminPanelSettings)
             }

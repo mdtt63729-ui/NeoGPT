@@ -1,40 +1,20 @@
 package com.neogpt.app.ui.navigation
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.unit.IntOffset
 
-// ═══════════════════════════════════════════════════════════
-// iOS-STYLE PAGE TRANSITIONS
-// ═══════════════════════════════════════════════════════════
+private const val DURATION = 360
+private const val EXIT_DURATION = 300
 
-private const val DURATION = 350
+fun AnimatedContentTransitionScope<*>.iosEnter() = slideInHorizontally(tween(DURATION, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(DURATION))
+fun AnimatedContentTransitionScope<*>.iosExit() = slideOutHorizontally(tween(EXIT_DURATION, easing = FastOutSlowInEasing)) { -it / 3 } + fadeOut(tween(EXIT_DURATION))
+fun AnimatedContentTransitionScope<*>.iosPopEnter() = slideInHorizontally(tween(DURATION, easing = FastOutSlowInEasing)) { -it / 3 } + fadeIn(tween(DURATION))
+fun AnimatedContentTransitionScope<*>.iosPopExit() = slideOutHorizontally(tween(DURATION, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(DURATION))
 
-// Home → Chat: Fade + slide up
-fun AnimatedContentTransitionScope<*>.slideUpEnter() = slideInVertically(
-    animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
-    initialOffsetY = { it / 6 },
-) + fadeIn(tween(DURATION))
-
-// Chat → Project: Horizontal slide (iOS-style)
-fun AnimatedContentTransitionScope<*>.slideHorizontalEnter() = slideInHorizontally(
-    animationSpec = spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMediumLow),
-    initialOffsetX = { it },
-) + fadeIn(tween(DURATION))
-
-// Back: slide right
-fun AnimatedContentTransitionScope<*>.slideRightExit() = slideOutHorizontally(
-    animationSpec = spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMediumLow),
-    targetOffsetX = { it },
-) + fadeOut(tween(DURATION))
-
-// Fade
+fun AnimatedContentTransitionScope<*>.slideUpEnter() = iosEnter()
+fun AnimatedContentTransitionScope<*>.slideHorizontalEnter() = iosEnter()
+fun AnimatedContentTransitionScope<*>.slideRightExit() = iosPopExit()
 fun AnimatedContentTransitionScope<*>.fadeIn() = fadeIn(tween(DURATION))
 fun AnimatedContentTransitionScope<*>.fadeOut() = fadeOut(tween(DURATION))

@@ -15,8 +15,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 com.neogpt.app.settings.AppSettings.ThemeMode.AMOLED -> NeoThemeMode.Amoled
                 com.neogpt.app.settings.AppSettings.ThemeMode.SYSTEM -> NeoThemeMode.System
             }
-            NeoGPTTheme(themeMode = themeMode, dynamicColor = settings.dynamicColor, liquidGlass = settings.liquidGlass) {
+            NeoGPTTheme(themeMode = themeMode, dynamicColor = settings.dynamicColor, liquidGlass = false) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
@@ -55,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 val currentRoute = currentEntry?.destination?.route
                 var exitDialog by remember { mutableStateOf(false) }
                 var lastBackAt by remember { mutableLongStateOf(0L) }
+                var showLaunch by remember { mutableStateOf(true) }
 
                 DisposableEffect(currentRoute, drawerState.isOpen, exitDialog) {
                     val callback = object : OnBackPressedCallback(true) {
@@ -80,13 +79,11 @@ class MainActivity : ComponentActivity() {
                     onDispose { callback.remove() }
                 }
 
-                Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize().background(
-                        if (settings.liquidGlass) Brush.radialGradient(
-                            colors = listOf(Color(0xFF352A66).copy(alpha = 0.28f), MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.background),
-                        ) else Brush.linearGradient(listOf(MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.background))
-                    )
-                ) {
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(1150L)
+                    showLaunch = false
+                }
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -104,6 +101,18 @@ class MainActivity : ComponentActivity() {
                         onOpenDrawer = { scope.launch { drawerState.open() } },
                     )
                 }
+
+                if (showLaunch) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = showLaunch,
+                        enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180)),
+                        exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300)),
+                    ) {
+                        com.neogpt.app.ui.screens.splash.SplashScreen(
+                            onNavigate = { showLaunch = false },
+                            embedded = true,
+                        )
+                    }
                 }
 
                 if (exitDialog) {

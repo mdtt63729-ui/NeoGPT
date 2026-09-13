@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -69,19 +68,13 @@ fun NeoFeatureCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val ui = neoUiSettings()
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val haptic = LocalHapticFeedback.current
+    val ui = neoUiSettings()
     val click = { if (ui.haptics) haptic.performHapticFeedback(HapticFeedbackType.VirtualKey); onClick() }
     val scale = if (ui.animations && pressed) .985f else 1f
-    if (ui.liquidGlass) {
-        NeoLiquidGlass(modifier = modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale }, shape = NeoShapes.large) {
-            Surface(onClick = click, color = Color.Transparent, shape = NeoShapes.large, interactionSource = source) {
-                FeatureCardContent(icon, title, description)
-            }
-        }
-    } else ElevatedCard(
+ElevatedCard(
         modifier = modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale }, shape = NeoShapes.large, onClick = click,
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
         interactionSource = source,

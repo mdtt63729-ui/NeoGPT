@@ -43,14 +43,19 @@ object GeminiRequestMapper {
         temperature: Float? = null,
         maxTokens: Int? = null,
         enableSearch: Boolean = false,
+        systemPrompt: String = "",
     ): GeminiRequest {
         val contents = mapMessages(messages)
         val tools = mutableListOf<Tool>()
         if (enableSearch) {
             tools.add(Tool(googleSearch = GoogleSearch()))
         }
+        val systemInstruction = systemPrompt.trim().takeIf { it.isNotBlank() }?.let {
+            Content(role = "user", parts = listOf(Part(text = it)))
+        }
         return GeminiRequest(
             contents = contents,
+            systemInstruction = systemInstruction,
             generationConfig = GenerationConfig(
                 temperature = temperature,
                 maxOutputTokens = maxTokens,

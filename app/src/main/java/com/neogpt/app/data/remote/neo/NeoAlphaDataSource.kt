@@ -21,8 +21,18 @@ class NeoAlphaDataSource(private val client: OkHttpClient) {
     data class ChatResult(val text: String)
     data class ImageResult(val imageUrl: String)
 
-    suspend fun chat(prompt: String): ChatResult = withContext(Dispatchers.IO) {
-        val json = postPrompt(LLM_ENDPOINT, IMAGE_PERSONA + prompt)
+    suspend fun chat(prompt: String, systemPrompt: String = ""): ChatResult = withContext(Dispatchers.IO) {
+        val effectivePrompt = buildString {
+            if (systemPrompt.isNotBlank()) {
+                append("SYSTEM INSTRUCTION — Follow this instruction as the highest-priority user-configured behavior for this conversation. ")
+                append(systemPrompt.trim())
+                append("\n\n")
+            }
+            append(IMAGE_PERSONA)
+            append("\n\n")
+            append(prompt)
+        }
+        val json = postPrompt(LLM_ENDPOINT, effectivePrompt)
         if (json.optString("status") != "success") {
             error(json.optString("message").ifBlank { "Neo 4.1 Alpha could not respond." })
         }

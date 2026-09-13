@@ -14,6 +14,7 @@ import com.neogpt.app.data.remote.gemini.GeminiDataSource
 import com.neogpt.app.data.remote.gemini.GeminiRequestMapper
 import com.neogpt.app.domain.model.Message
 import com.neogpt.app.security.SecureStorage
+import com.neogpt.app.settings.SystemPromptStore
 import com.neogpt.app.ui.components.*
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
@@ -26,6 +27,7 @@ import okhttp3.OkHttpClient
 fun ResearchScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val systemPromptStore = remember { SystemPromptStore(context) }
     var query by remember { mutableStateOf("") }
     var running by remember { mutableStateOf(false) }
     var report by remember { mutableStateOf("") }
@@ -57,6 +59,7 @@ fun ResearchScreen(onBack: () -> Unit) {
                             messages = listOf(Message(id = "research", role = Message.Role.USER, content = question)),
                             model = "gemini-3.8-flash",
                             enableSearch = true,
+                            systemPrompt = systemPromptStore.get(),
                         )
                         var answer = ""
                         source.streamGenerateContent("gemini-3.8-flash", request).collect { chunk ->

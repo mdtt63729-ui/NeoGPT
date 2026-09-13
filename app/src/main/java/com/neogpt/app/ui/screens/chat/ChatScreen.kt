@@ -136,13 +136,6 @@ fun ChatScreen(
         },
         bottomBar = {
             Column(Modifier.imePadding().navigationBarsPadding().padding(bottom = NeoSpacing.sm)) {
-                AnimatedVisibility(showMode) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = NeoSpacing.lg, vertical = NeoSpacing.xs), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ComposerMode.values().filter { it != ComposerMode.DEFAULT }.forEach { mode ->
-                            FilterChip(selected = state.activeMode == mode, onClick = { }, label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) })
-                        }
-                    }
-                }
                 NeoComposer(
                     text = composerText,
                     onTextChange = { composerText = it },
@@ -195,6 +188,7 @@ fun ChatScreen(
                             onEdit = { viewModel.editMessage(message.id) },
                             onLike = { viewModel.likeMessage(message.id) },
                             onDislike = { viewModel.dislikeMessage(message.id) },
+                            responseTextScale = appSettings.responseTextScale,
                             onDownloadImage = {
                                 message.imageUrl?.let { url ->
                                     if (android.os.Build.VERSION.SDK_INT <= 28 && ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -217,16 +211,17 @@ fun ChatScreen(
                     enter = fadeIn(tween(180)) + androidx.compose.animation.scaleIn(initialScale = .82f, animationSpec = tween(180)),
                     exit = fadeOut(tween(140)) + androidx.compose.animation.scaleOut(targetScale = .82f, animationSpec = tween(140)),
                 ) {
-                    NeoGlassIconButton(
-                        icon = Icons.Rounded.KeyboardArrowDown,
-                        onClick = {
-                            if (state.messages.isNotEmpty()) {
-                                scope.launch { listState.animateScrollToItem(state.messages.lastIndex) }
-                            }
-                        },
-                        contentDescription = "Scroll to latest",
-                        size = 46,
-                    )
+                    Surface(
+                        modifier = Modifier.size(46.dp),
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f)),
+                        onClick = { if (state.messages.isNotEmpty()) scope.launch { listState.animateScrollToItem(state.messages.lastIndex) } },
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.KeyboardArrowDown, "Scroll to latest", Modifier.size(22.dp))
+                        }
+                    }
                 }
             }
         }
@@ -238,17 +233,13 @@ fun ChatScreen(
 
 @Composable
 private fun ChatWelcome(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "chat-welcome")
-    val scale by transition.animateFloat(0.97f, 1.03f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "chat-welcome-scale")
-    Column(modifier.padding(horizontal = NeoSpacing.lg), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+    Column(modifier.padding(horizontal = NeoSpacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
-        Surface(Modifier.size(84.dp).graphicsLayer { scaleX = scale; scaleY = scale }, shape = androidx.compose.foundation.shape.CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 3.dp) {
-            androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(com.neogpt.app.R.drawable.neo_app_icon),
-                contentDescription = null,
-                modifier = Modifier.padding(10.dp).fillMaxSize(),
-            )
-        }
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(com.neogpt.app.R.drawable.neo_app_icon),
+            contentDescription = "Neo GPT",
+            modifier = Modifier.size(92.dp),
+        )
         Spacer(Modifier.height(18.dp))
         Text("Neo GPT", style = MaterialTheme.typography.displaySmall)
         Spacer(Modifier.height(8.dp))

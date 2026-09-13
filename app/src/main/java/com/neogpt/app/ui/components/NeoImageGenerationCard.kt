@@ -43,9 +43,8 @@ fun NeoImageGenerationCard(
     modifier: Modifier = Modifier,
 ) {
     var showDownload by remember(imageUrl) { mutableStateOf(false) }
-    val blurRadius = animateFloatAsStateCompat(if (imageCreated) 0f else 16f)
-    val imageAlpha = animateFloatAsStateCompat(if (imageCreated) 1f else 0f)
-    val imageScale = animateFloatAsStateCompat(if (imageCreated) 1f else 0.96f)
+    val blurRadius = animateFloatAsStateCompat(if (imageCreated) 0f else 14f, 240)
+    val imageAlpha = animateFloatAsStateCompat(if (imageCreated) 1f else 0f, 240)
 
     Column(modifier.fillMaxWidth()) {
         Box(
@@ -99,7 +98,7 @@ fun NeoImageGenerationCard(
                     contentDescription = "Generated image",
                     modifier = Modifier
                         .fillMaxSize()
-                        .graphicsLayer { alpha = imageAlpha; scaleX = imageScale; scaleY = imageScale }
+                        .graphicsLayer { alpha = imageAlpha }
                         .blur(blurRadius.dp)
                         .pointerInput(imageUrl) {
                             awaitEachGesture {
@@ -169,7 +168,7 @@ fun NeoImageGenerationCard(
 private val NeoSpacingShape = RoundedCornerShape(16.dp)
 
 @Composable
-private fun animateFloatAsStateCompat(target: Float): Float {
-    val value by androidx.compose.animation.core.animateFloatAsState(target, animationSpec = tween(650, easing = FastOutSlowInEasing), label = "image-state")
+private fun animateFloatAsStateCompat(target: Float, duration: Int): Float {
+    val value by androidx.compose.animation.core.animateFloatAsState(target, animationSpec = tween(duration, easing = FastOutSlowInEasing), label = "image-state")
     return value
 }

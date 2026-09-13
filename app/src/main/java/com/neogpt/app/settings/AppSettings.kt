@@ -14,12 +14,12 @@ class AppSettings private constructor(context: Context) {
 
     fun setThemeMode(v: ThemeMode) = update { it.copy(themeMode = v) }
     fun setDynamicColor(v: Boolean) = update { it.copy(dynamicColor = v) }
-    fun setLiquidGlass(v: Boolean) = update { it.copy(liquidGlass = v) }
     fun setAnimations(v: Boolean) = update { it.copy(animations = v) }
     fun setAutoScroll(v: Boolean) = update { it.copy(autoScroll = v) }
     fun setHaptics(v: Boolean) = update { it.copy(haptics = v) }
     fun setEnterToSend(v: Boolean) = update { it.copy(enterToSend = v) }
     fun setShowTimestamps(v: Boolean) = update { it.copy(showTimestamps = v) }
+    fun setResponseTextScale(v: Float) = update { it.copy(responseTextScale = v.coerceIn(0.85f, 1.25f)) }
 
     private fun update(transform: (State) -> State) {
         val next = transform(_state.value)
@@ -27,35 +27,37 @@ class AppSettings private constructor(context: Context) {
         prefs.edit()
             .putString("theme", next.themeMode.name)
             .putBoolean("dynamic", next.dynamicColor)
-            .putBoolean("glass", next.liquidGlass)
             .putBoolean("animations", next.animations)
             .putBoolean("auto_scroll", next.autoScroll)
             .putBoolean("haptics", next.haptics)
             .putBoolean("enter_send", next.enterToSend)
             .putBoolean("timestamps", next.showTimestamps)
+            .putFloat("response_text_scale", next.responseTextScale)
             .apply()
     }
 
     private fun readState(): State = State(
         themeMode = runCatching { ThemeMode.valueOf(prefs.getString("theme", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name) }.getOrDefault(ThemeMode.SYSTEM),
         dynamicColor = prefs.getBoolean("dynamic", true),
-        liquidGlass = prefs.getBoolean("glass", false),
+        liquidGlass = false,
         animations = prefs.getBoolean("animations", true),
         autoScroll = prefs.getBoolean("auto_scroll", true),
         haptics = prefs.getBoolean("haptics", true),
         enterToSend = prefs.getBoolean("enter_send", true),
         showTimestamps = prefs.getBoolean("timestamps", false),
+        responseTextScale = prefs.getFloat("response_text_scale", 1f).coerceIn(0.85f, 1.25f),
     )
 
     data class State(
         val themeMode: ThemeMode,
         val dynamicColor: Boolean,
-        val liquidGlass: Boolean,
+        val liquidGlass: Boolean = false,
         val animations: Boolean,
         val autoScroll: Boolean,
         val haptics: Boolean,
         val enterToSend: Boolean,
         val showTimestamps: Boolean,
+        val responseTextScale: Float = 1f,
     )
 
     enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }

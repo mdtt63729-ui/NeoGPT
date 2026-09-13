@@ -32,7 +32,7 @@ import com.neogpt.app.settings.rememberAppSettingsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.draw.scale
 enum class NeoButtonStyle {
-    Filled, Tonal, Outlined, Text, Glass
+    Filled, Tonal, Outlined, Text
 }
 
 @Composable
@@ -92,14 +92,6 @@ fun NeoButton(
             ) {
                 ButtonContent(text, icon)
             }
-            NeoButtonStyle.Glass -> NeoGlassButton(
-                text = text,
-                onClick = onClick,
-                modifier = Modifier,
-                icon = icon,
-                enabled = enabled,
-                isPill = isPill,
-            )
         }
     }
 }

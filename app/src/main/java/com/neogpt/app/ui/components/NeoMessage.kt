@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MoreHoriz
@@ -35,8 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.neogpt.app.R
 import com.neogpt.app.ui.theme.NeoDimens
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
@@ -75,6 +76,7 @@ fun NeoMessage(
     onDislike: () -> Unit = {},
     onMore: () -> Unit = {},
     onDownloadImage: () -> Unit = {},
+    responseTextScale: Float = 1f,
 ) {
     var showToolbar by remember { mutableStateOf(false) }
 
@@ -104,20 +106,11 @@ fun NeoMessage(
         ) {
             Row(verticalAlignment = Alignment.Top) {
                 // AI Avatar
-                Surface(
-                    modifier = Modifier.size(NeoDimens.avatarSmall),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = "AI",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
+                androidx.compose.foundation.Image(
+                    painter = painterResource(R.drawable.neo_app_icon),
+                    contentDescription = "Neo GPT",
+                    modifier = Modifier.size(30.dp),
+                )
                 Spacer(modifier = Modifier.width(NeoSpacing.md))
                 // Content
                 Column(modifier = Modifier.weight(1f)) {
@@ -132,6 +125,7 @@ fun NeoMessage(
                         NeoMarkdown(
                             markdown = message.content,
                             isStreaming = message.isStreaming,
+                            textScale = responseTextScale,
                         )
                     } else if (message.isStreaming && !message.isImageGenerating) {
                         NeoThinkingIndicator()
@@ -172,25 +166,27 @@ fun NeoMessage(
 
 @Composable
 private fun MessageToolbar(
-    onCopy: () -> Unit,
-    onRegenerate: () -> Unit,
-    onShare: () -> Unit,
-    onEdit: () -> Unit,
-    onLike: () -> Unit,
-    onDislike: () -> Unit,
-    onMore: () -> Unit,
+    onCopy: () -> Unit, onRegenerate: () -> Unit, onShare: () -> Unit, onEdit: () -> Unit,
+    onLike: () -> Unit, onDislike: () -> Unit, onMore: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.padding(top = NeoSpacing.sm),
-        horizontalArrangement = Arrangement.spacedBy(NeoSpacing.xs),
+        modifier = Modifier.padding(top = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        NeoIconButton(icon = Icons.Rounded.ContentCopy, onClick = onCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        NeoIconButton(icon = Icons.Rounded.ThumbUp, onClick = onLike, contentDescription = "Like", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        NeoIconButton(icon = Icons.Rounded.ThumbDown, onClick = onDislike, contentDescription = "Dislike", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        NeoIconButton(icon = Icons.Rounded.Refresh, onClick = onRegenerate, contentDescription = "Regenerate", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        NeoIconButton(icon = Icons.Rounded.Share, onClick = onShare, contentDescription = "Share", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        NeoIconButton(icon = Icons.Rounded.Edit, onClick = onEdit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        NeoIconButton(icon = Icons.Rounded.MoreHoriz, onClick = onMore, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        NeoToolbarIcon(Icons.Rounded.ContentCopy, "Copy", onCopy)
+        NeoToolbarIcon(Icons.Rounded.ThumbUp, "Like", onLike)
+        NeoToolbarIcon(Icons.Rounded.ThumbDown, "Dislike", onDislike)
+        NeoToolbarIcon(Icons.Rounded.Refresh, "Regenerate", onRegenerate)
+        NeoToolbarIcon(Icons.Rounded.Share, "Share", onShare)
+        NeoToolbarIcon(Icons.Rounded.Edit, "Edit", onEdit)
+        NeoToolbarIcon(Icons.Rounded.MoreHoriz, "More", onMore)
+    }
+}
+
+@Composable
+private fun NeoToolbarIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(38.dp)) {
+        Icon(icon, description, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
