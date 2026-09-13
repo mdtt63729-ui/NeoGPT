@@ -3,7 +3,11 @@ package com.neogpt.app.ui.screens.settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -41,9 +45,18 @@ private enum class SettingsCategory(
 fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
     var selected by remember { mutableStateOf<SettingsCategory?>(null) }
 
+    val settingsEase = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
     AnimatedContent(
         targetState = selected,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        transitionSpec = {
+            if (targetState != null) {
+                slideInHorizontally(tween(300, easing = settingsEase)) { it } + fadeIn(tween(300, easing = settingsEase)) togetherWith
+                    slideOutHorizontally(tween(230, easing = settingsEase)) { -it / 4 } + fadeOut(tween(230, easing = settingsEase))
+            } else {
+                slideInHorizontally(tween(300, easing = settingsEase)) { -it / 4 } + fadeIn(tween(300, easing = settingsEase)) togetherWith
+                    slideOutHorizontally(tween(230, easing = settingsEase)) { it } + fadeOut(tween(230, easing = settingsEase))
+            }
+        },
         label = "settings-category-navigation",
     ) { category ->
         if (category == null) {
@@ -251,7 +264,7 @@ private fun AboutSettings() {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
         item {
             NeoSectionTitle("About", "Neo GPT product information.")
-            NeoFeatureCard(Icons.Rounded.AutoAwesome, "Neo GPT", "Version 1.6.0 • Material 3 • Multi-provider AI", {})
+            NeoFeatureCard(Icons.Rounded.AutoAwesome, "Neo GPT", "Version 1.7.0 • Material 3 • Multi-provider AI", {})
             Spacer(Modifier.height(NeoSpacing.sm))
             NeoFeatureCard(Icons.Rounded.DesignServices, "Design system", "Clean Material 3 surfaces, responsive motion and premium chat interactions.", {})
         }
@@ -268,7 +281,7 @@ private fun ResponseTextSizeCard(scale: Float, onChange: (Float) -> Unit) {
             }
             Spacer(Modifier.height(NeoSpacing.xs))
             Text("Adjust how large AI answers appear in chat.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Slider(value = scale, onValueChange = onChange, valueRange = 0.85f..1.25f, steps = 7)
+            Slider(value = scale, onValueChange = onChange, valueRange = 0.80f..1.40f, steps = 7)
         }
     }
 }

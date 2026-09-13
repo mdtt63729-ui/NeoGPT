@@ -1,6 +1,11 @@
 package com.neogpt.app
 
 import android.app.Application
+import androidx.room.Room
+import com.neogpt.app.data.local.NeoDatabase
 
-/** Minimal application entry point; no startup dependency graph is required by Neo GPT. */
-class NeoGptApplication : Application()
+class NeoGptApplication : Application() {
+    val database: NeoDatabase by lazy {
+        Room.databaseBuilder(this, NeoDatabase::class.java, "neo_gpt.db").build()
+    }
+}

@@ -186,30 +186,36 @@ fun PulsingDotGrid(
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
         label = "image-grid-phase",
     )
     val primary = MaterialTheme.colorScheme.primary
+    val completed = (progress.coerceIn(0, 100) / 100f) * 25f
+
     androidx.compose.foundation.Canvas(modifier) {
         val columns = 5
         val rows = 5
         val spacingX = size.width / (columns + 1)
         val spacingY = size.height / (rows + 1)
-        val normalizedProgress = progress.coerceIn(0, 100) / 100f
-        for (row in 0 until rows) {
-            for (column in 0 until columns) {
-                val index = row * columns + column
-                val wave = ((phase * 2f + index * 0.09f) % 1f)
-                val threshold = normalizedProgress * 25f
-                val active = index < threshold
-                val alpha = if (active) 0.28f + wave * 0.62f else 0.10f + wave * 0.12f
-                val radius = 2.2.dp.toPx() * (if (active) 0.9f + wave * 0.55f else 0.82f)
-                drawCircle(
-                    color = primary.copy(alpha = alpha),
-                    radius = radius,
-                    center = androidx.compose.ui.geometry.Offset(spacingX * (column + 1), spacingY * (row + 1)),
-                )
-            }
+        for (index in 0 until 25) {
+            val row = index / columns
+            val column = index % columns
+            val distance = kotlin.math.abs(index - phase * 24f)
+            val wave = (1f - (distance / 7f)).coerceIn(0f, 1f)
+            val progressAlpha = if (index < completed) 0.72f else 0.18f
+            val alpha = (progressAlpha + wave * 0.18f).coerceIn(0f, 1f)
+            val radius = (1.9f + wave * 0.9f).dp.toPx()
+            drawCircle(
+                color = primary.copy(alpha = alpha),
+                radius = radius,
+                center = androidx.compose.ui.geometry.Offset(
+                    spacingX * (column + 1),
+                    spacingY * (row + 1),
+                ),
+            )
         }
     }
 }

@@ -19,7 +19,7 @@ class AppSettings private constructor(context: Context) {
     fun setHaptics(v: Boolean) = update { it.copy(haptics = v) }
     fun setEnterToSend(v: Boolean) = update { it.copy(enterToSend = v) }
     fun setShowTimestamps(v: Boolean) = update { it.copy(showTimestamps = v) }
-    fun setResponseTextScale(v: Float) = update { it.copy(responseTextScale = v.coerceIn(0.85f, 1.25f)) }
+    fun setResponseTextScale(v: Float) = update { it.copy(responseTextScale = v.coerceIn(0.80f, 1.40f)) }
 
     private fun update(transform: (State) -> State) {
         val next = transform(_state.value)
@@ -44,7 +44,7 @@ class AppSettings private constructor(context: Context) {
         haptics = prefs.getBoolean("haptics", true),
         enterToSend = prefs.getBoolean("enter_send", true),
         showTimestamps = prefs.getBoolean("timestamps", false),
-        responseTextScale = prefs.getFloat("response_text_scale", 1f).coerceIn(0.85f, 1.25f),
+        responseTextScale = prefs.getFloat("response_text_scale", 1f).coerceIn(0.80f, 1.40f),
     )
 
     data class State(

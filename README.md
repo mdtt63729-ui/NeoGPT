@@ -4,7 +4,7 @@ NeoGPT is an Android AI assistant built with Jetpack Compose and Material 3.
 
 ## Current release build
 
-- Version: 1.6.0 (versionCode 7)
+- Version: 1.7.0 (versionCode 7)
 - compileSdk / targetSdk: 36
 - Android Gradle Plugin: 9.1.1
 - Gradle: 9.3.1

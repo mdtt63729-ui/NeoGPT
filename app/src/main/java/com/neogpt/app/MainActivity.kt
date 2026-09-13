@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 androidx.compose.runtime.LaunchedEffect(Unit) {
-                    kotlinx.coroutines.delay(1150L)
+                    kotlinx.coroutines.delay(720L)
                     showLaunch = false
                 }
 
@@ -91,6 +91,10 @@ class MainActivity : ComponentActivity() {
                             onNavigate = { route ->
                                 scope.launch { drawerState.close() }
                                 navController.navigate(route) { launchSingleTop = true }
+                            },
+                            onOpenChat = { chatId, modelId ->
+                                scope.launch { drawerState.close() }
+                                navController.navigate(NeoRoutes.chat(chatId = chatId, model = modelId)) { launchSingleTop = true }
                             },
                             onClose = { scope.launch { drawerState.close() } },
                         )

@@ -4,7 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -48,7 +48,7 @@ fun SplashScreen(onNavigate: () -> Unit, embedded: Boolean = false) {
 
     LaunchedEffect(Unit) {
         visible = true
-        delay(if (embedded) 1050L else 1650L)
+        delay(if (embedded) 720L else 1200L)
         onNavigate()
     }
 
@@ -78,21 +78,19 @@ fun SplashScreen(onNavigate: () -> Unit, embedded: Boolean = false) {
 
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(tween(420)) + scaleIn(tween(700), initialScale = 0.78f),
+            enter = fadeIn(tween(360)) + slideInVertically(tween(520)) { it / 14 },
             exit = fadeOut(tween(280)),
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(horizontal = 28.dp),
             ) {
-                Box(Modifier.size(190.dp), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(172.dp), contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(R.drawable.neo_app_icon),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+                Box(Modifier.size(170.dp), contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(R.drawable.neo_app_icon),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 Spacer(Modifier.height(18.dp))
                 Text(

@@ -41,7 +41,7 @@ import com.neogpt.app.voice.VoiceInputManager
 import com.neogpt.app.voice.VoiceState
 
 @Composable
-fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, String, String) -> Unit, onOpenLive: () -> Unit = {}) {
+fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, String, String, Long) -> Unit, onOpenLive: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: HomeViewModel = remember { HomeViewModel(context) }
     val state by viewModel.state.collectAsState()
@@ -56,6 +56,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var selectedName by remember { mutableStateOf("") }
     var selectedMime by remember { mutableStateOf("") }
+    var selectedSize by remember { mutableStateOf(0L) }
     var voiceManager by remember { mutableStateOf<VoiceInputManager?>(null) }
     var voiceState by remember { mutableStateOf(VoiceState.IDLE) }
     var voiceTranscript by remember { mutableStateOf("") }
@@ -68,6 +69,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
             selectedUri = uri
             selectedMime = context.contentResolver.getType(uri) ?: "application/octet-stream"
             selectedName = queryName(context, uri)
+            selectedSize = querySize(context, uri)
         }
     }
     DisposableEffect(Unit) {
@@ -104,7 +106,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-                onClick = { onOpenChat(state.selectedModel.id, "", "", "", "") },
+                onClick = { onOpenChat(state.selectedModel.id, "", "", "", "", 0L) },
             ) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Edit, "New chat", Modifier.size(22.dp)) } }
         }
     }) { padding ->
@@ -124,8 +126,8 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                 text = composerText, onTextChange = { composerText = it },
                 onSend = {
                     if (composerText.isNotBlank() || selectedUri != null) {
-                        onOpenChat(state.selectedModel.id, composerText.trim(), selectedUri?.toString().orEmpty(), selectedName, selectedMime)
-                        composerText = ""; selectedUri = null; selectedName = ""; selectedMime = ""
+                        onOpenChat(state.selectedModel.id, composerText.trim(), selectedUri?.toString().orEmpty(), selectedName, selectedMime, selectedSize)
+                        composerText = ""; selectedUri = null; selectedName = ""; selectedMime = ""; selectedSize = 0L
                     }
                 },
                 onAddClick = { filePicker.launch(arrayOf("image/*", "application/pdf", "text/*", "audio/*", "video/*", "application/octet-stream")) },
@@ -140,13 +142,21 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                 isListening = listening, voiceTranscript = voiceTranscript, voiceRmsLevel = voiceRmsLevel,
                 onLiveClick = onOpenLive,
                 attachments = if (selectedUri != null) listOf(AttachmentChip("home", selectedName, homeAttachmentType(selectedMime))) else emptyList(),
-                onRemoveAttachment = { selectedUri = null; selectedName = ""; selectedMime = "" },
+                onRemoveAttachment = { selectedUri = null; selectedName = ""; selectedMime = ""; selectedSize = 0L },
                 modifier = Modifier.padding(bottom = NeoSpacing.sm),
             )
             Text("AI can make mistakes. Check important information.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = NeoSpacing.sm))
         }
     }
     if (showModelPicker) NeoModelPickerSheet(state.availableModels, state.selectedModel.id, { viewModel.selectModel(it); showModelPicker = false }, { showModelPicker = false })
+}
+
+private fun querySize(context: Context, uri: Uri): Long {
+    var size = 0L
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { c ->
+        if (c.moveToFirst()) c.getColumnIndex(OpenableColumns.SIZE).takeIf { it >= 0 }?.let { size = c.getLong(it) }
+    }
+    return size
 }
 
 private fun queryName(context: Context, uri: Uri): String {

@@ -2,6 +2,7 @@ package com.neogpt.app.ui.screens.chat
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -30,6 +32,7 @@ import com.neogpt.app.ui.theme.NeoSpacing
 import com.neogpt.app.voice.VoiceInputManager
 import com.neogpt.app.voice.VoiceState
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
 private data class SelectedFile(val item: PendingAttachment, val chip: AttachmentChip)
@@ -42,13 +45,14 @@ fun ChatScreen(
     initialAttachmentUri: String = "",
     initialAttachmentName: String = "",
     initialAttachmentMime: String = "",
+    initialAttachmentSize: Long = 0L,
     onBack: () -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenLive: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val appSettings = rememberAppSettingsState(context)
-    val viewModel = remember(modelId) { ChatViewModel(context, modelId) }
+    val viewModel = remember(chatId, modelId) { ChatViewModel(context, chatId, modelId) }
     val state by viewModel.state.collectAsState()
     var composerText by remember { mutableStateOf("") }
     var showMode by remember { mutableStateOf(false) }
@@ -59,6 +63,8 @@ fun ChatScreen(
     var voiceTranscript by remember { mutableStateOf("") }
     var voiceRmsLevel by remember { mutableStateOf(0f) }
     var pendingImageDownload by remember { mutableStateOf<String?>(null)}
+    var editingMessageId by remember { mutableStateOf<String?>(null) }
+    var moreMessageId by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -92,11 +98,11 @@ fun ChatScreen(
         onDispose { job.cancel(); manager.destroy(); voiceManager = null }
     }
 
-    LaunchedEffect(initialPrompt, initialAttachmentUri) {
-        if (state.messages.isEmpty() && (initialPrompt.isNotBlank() || initialAttachmentUri.isNotBlank())) {
+    LaunchedEffect(initialPrompt, initialAttachmentUri, state.isLoaded) {
+        if (state.isLoaded && state.messages.isEmpty() && (initialPrompt.isNotBlank() || initialAttachmentUri.isNotBlank())) {
             val initialAttachment = if (initialAttachmentUri.isNotBlank()) {
                 val uri = Uri.parse(initialAttachmentUri)
-                PendingAttachment("initial", uri, initialAttachmentName.ifBlank { "Attachment" }, initialAttachmentMime.ifBlank { "application/octet-stream" }, 0)
+                PendingAttachment("initial", uri, initialAttachmentName.ifBlank { "Attachment" }, initialAttachmentMime.ifBlank { "application/octet-stream" }, initialAttachmentSize)
             } else null
             viewModel.sendMessage(initialPrompt, listOfNotNull(initialAttachment))
         }
@@ -110,12 +116,27 @@ fun ChatScreen(
             lastVisible >= (layout.totalItemsCount - 2).coerceAtLeast(0)
         }
     }
-    LaunchedEffect(state.messages.size, state.messages.lastOrNull()?.content, state.isGenerating, appSettings.autoScroll) {
-        if (appSettings.autoScroll && state.messages.isNotEmpty() && isNearBottom) {
-            listState.animateScrollToItem(
-                index = state.messages.lastIndex,
-                scrollOffset = 0,
+    // Never start a new animated scroll for every streamed token. That pattern
+    // competes with Compose layout and causes visible flashing/jitter. We sample
+    // stream growth and use a lightweight position update while the user remains
+    // at the bottom; a real animation is used only for newly inserted messages.
+    LaunchedEffect(appSettings.autoScroll) {
+        snapshotFlow {
+            Triple(
+                state.messages.size,
+                state.messages.lastOrNull()?.content?.length ?: 0,
+                isNearBottom,
             )
+        }.sample(60).collect { (messageCount, _, nearBottom) ->
+            if (appSettings.autoScroll && messageCount > 0 && nearBottom) {
+                listState.scrollToItem(listState.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1)
+            }
+        }
+    }
+
+    LaunchedEffect(state.messages.size) {
+        if (appSettings.autoScroll && state.messages.isNotEmpty() && isNearBottom) {
+            listState.animateScrollToItem(state.messages.lastIndex)
         }
     }
     LaunchedEffect(state.error) { showError = state.error != null }
@@ -136,13 +157,23 @@ fun ChatScreen(
         },
         bottomBar = {
             Column(Modifier.imePadding().navigationBarsPadding().padding(bottom = NeoSpacing.sm)) {
+                if (editingMessageId != null) {
+                    Surface(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)) {
+                        Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Editing message", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { editingMessageId = null; composerText = "" }) { Text("Cancel") }
+                        }
+                    }
+                }
                 NeoComposer(
                     text = composerText,
                     onTextChange = { composerText = it },
                     onSend = {
                         if (composerText.isNotBlank() || selectedFile != null) {
-                            viewModel.sendMessage(composerText, listOfNotNull(selectedFile?.item))
-                            composerText = ""; selectedFile = null
+                            val editId = editingMessageId
+                            if (editId != null) viewModel.editAndResend(editId, composerText)
+                            else viewModel.sendMessage(composerText, listOfNotNull(selectedFile?.item))
+                            composerText = ""; selectedFile = null; editingMessageId = null
                         }
                     },
                     onAddClick = { filePicker.launch(arrayOf("image/*", "application/pdf", "text/*", "audio/*", "video/*", "application/octet-stream")) },
@@ -186,10 +217,25 @@ fun ChatScreen(
                             onCopy = { viewModel.copyMessage(message.id) },
                             onRegenerate = { viewModel.regenerateMessage(message.id) },
                             onShare = { viewModel.shareMessage(message.id) },
-                            onEdit = { viewModel.editMessage(message.id) },
+                            onEdit = {
+                                val text = viewModel.getMessageText(message.id)
+                                if (message.role == MessageRole.USER) { editingMessageId = message.id; composerText = text }
+                                else if (text.isNotBlank()) composerText = text
+                            },
                             onLike = { viewModel.likeMessage(message.id) },
                             onDislike = { viewModel.dislikeMessage(message.id) },
+                            onMore = { moreMessageId = message.id },
                             responseTextScale = appSettings.responseTextScale,
+                            onOpenAttachment = { attachment ->
+                                attachment.localUri?.let { uri ->
+                                    runCatching {
+                                        context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                                            data = Uri.parse(uri)
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        })
+                                    }
+                                }
+                            },
                             onDownloadImage = {
                                 message.imageUrl?.let { url ->
                                     if (android.os.Build.VERSION.SDK_INT <= 28 && ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -226,6 +272,15 @@ fun ChatScreen(
                 }
             }
         }
+    }
+    if (moreMessageId != null) {
+        AlertDialog(
+            onDismissRequest = { moreMessageId = null },
+            title = { Text("Message actions") },
+            text = { Text("Choose an action for this message.") },
+            confirmButton = { TextButton(onClick = { moreMessageId?.let(viewModel::copyMessage); moreMessageId = null }) { Text("Copy") } },
+            dismissButton = { TextButton(onClick = { moreMessageId?.let(viewModel::deleteMessage); moreMessageId = null }) { Text("Delete") } },
+        )
     }
     if (showError && state.error != null) {
         AlertDialog(onDismissRequest = { showError = false }, icon = { Icon(Icons.Rounded.ErrorOutline, null) }, title = { Text("Neo GPT couldn't respond") }, text = { Text(state.error ?: "") }, confirmButton = { TextButton(onClick = { showError = false }) { Text("OK") } })

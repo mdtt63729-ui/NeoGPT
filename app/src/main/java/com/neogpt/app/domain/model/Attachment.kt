@@ -5,7 +5,10 @@ data class Attachment(
     val name: String,
     val type: Type,
     val mimeType: String,
+    /** Provider URI, such as a Gemini File API URI. */
     val uri: String? = null,
+    /** Original local content:// URI so the user can reopen the attachment. */
+    val localUri: String? = null,
     val base64Data: String? = null,
     val sizeBytes: Long = 0,
 ) {
