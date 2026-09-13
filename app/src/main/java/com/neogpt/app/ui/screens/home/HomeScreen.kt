@@ -130,7 +130,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                         composerText = ""; selectedUri = null; selectedName = ""; selectedMime = ""; selectedSize = 0L
                     }
                 },
-                onAddClick = { filePicker.launch(arrayOf("image/*", "application/pdf", "text/*", "audio/*", "video/*", "application/octet-stream")) },
+                onAddClick = { filePicker.launch(arrayOf("*/*")) },
                 onImageClick = {
                     if (!composerText.trimStart().startsWith("/image", ignoreCase = true)) {
                         composerText = if (composerText.isBlank()) "/image " else "/image ${composerText.trimStart()}"

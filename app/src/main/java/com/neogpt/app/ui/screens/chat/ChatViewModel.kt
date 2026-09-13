@@ -18,6 +18,7 @@ import com.neogpt.app.data.local.entity.ChatEntity
 import com.neogpt.app.data.local.entity.MessageEntity
 import com.neogpt.app.data.remote.gemini.GeminiDataSource
 import com.neogpt.app.data.remote.neo.NeoAlphaDataSource
+import com.neogpt.app.files.AttachmentContentReader
 import com.neogpt.app.data.remote.gemini.GeminiRequestMapper
 import com.neogpt.app.data.remote.openai.OpenAiCompatibleDataSource
 import com.neogpt.app.domain.model.Attachment
@@ -27,6 +28,8 @@ import com.neogpt.app.settings.SystemPromptStore
 import com.neogpt.app.ui.components.ComposerMode
 import com.neogpt.app.ui.components.MessageRole
 import com.neogpt.app.ui.components.NeoMessageData
+import com.neogpt.app.ui.components.AgentStep
+import com.neogpt.app.ui.components.AgentStepState
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -99,13 +102,23 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
             attachments = pendingAttachments.map { it.toAttachment() },
         )
         val aiId = "${System.currentTimeMillis()}-a"
-        val ai = NeoMessageData(id = aiId, role = MessageRole.AI, content = "", isStreaming = true)
+        val largeTask = isLargeTask(prompt, pendingAttachments)
+        val steps = if (largeTask) initialThinkingSteps(pendingAttachments) else emptyList()
+        val ai = NeoMessageData(
+            id = aiId,
+            role = MessageRole.AI,
+            content = "",
+            isStreaming = true,
+            agentSteps = steps,
+            toolLabels = if (largeTask) pendingAttachments.map { "Read File • ${it.name}" } else emptyList(),
+        )
         _state.update { it.copy(messages = it.messages + user + ai, isGenerating = true, error = null) }
         generationJob?.cancel()
         generationJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 ensureChat(prompt, pendingAttachments)
                 persistUserAndAi(user, aiId)
+                if (!largeTask) delay(180)
                 when {
                     prompt.trimStart().startsWith("/image", ignoreCase = true) -> generateNeoImage(aiId, prompt)
                     modelRef.provider == AiProvider.NEO_ALPHA -> generateNeoAlpha(aiId, prompt, pendingAttachments)
@@ -115,7 +128,21 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) return@launch
                 val message = t.message ?: "Unable to reach ${modelRef.provider.displayName}."
-                _state.update { current -> current.copy(isGenerating = false, error = message, messages = current.messages.map { item -> if (item.id == aiId) item.copy(content = "", isStreaming = false) else item }) }
+                _state.update { current ->
+                    current.copy(
+                        isGenerating = false,
+                        error = message,
+                        messages = current.messages.map { item ->
+                            if (item.id == aiId) item.copy(
+                                content = "",
+                                isStreaming = false,
+                                agentSteps = item.agentSteps.mapIndexed { index, step ->
+                                    if (index == item.agentSteps.lastIndex) step.copy(message = "Could not complete this step", state = AgentStepState.ERROR) else step.copy(state = if (step.state == AgentStepState.IN_PROGRESS) AgentStepState.COMPLETED else step.state)
+                                },
+                            ) else item
+                        },
+                    )
+                }
             }
         }
     }
@@ -145,6 +172,7 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
 
     private suspend fun generateNeoAlpha(aiId: String, prompt: String, pendingAttachments: List<PendingAttachment>) {
         val source = NeoAlphaDataSource(client)
+        updateThinkingStage(aiId, "Reviewing the request", "Reading the attached context")
         val result = source.chat(buildNeoPromptWithFiles(prompt, pendingAttachments), systemPromptStore.get())
         val responseText = result.text.trim()
         if (responseText.startsWith("/image", ignoreCase = true)) {
@@ -154,6 +182,7 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
             val image = generateImageWithProgress(aiId, description, source)
             updateImageResult(aiId, image.imageUrl)
         } else {
+            updateThinkingStage(aiId, "Preparing the response", null)
             updateStreaming(aiId, result.text)
             finishStreaming(aiId)
         }
@@ -161,8 +190,9 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
 
     private suspend fun buildNeoPromptWithFiles(prompt: String, pending: List<PendingAttachment>): String {
         val fromHistory = _state.value.messages.flatMap { message ->
-            if (message.role == MessageRole.USER) message.attachments.mapNotNull { a -> a.localUri?.let { PendingAttachment(a.id, Uri.parse(it), a.name, a.mimeType, a.sizeBytes) } }
-            else emptyList()
+            if (message.role == MessageRole.USER) message.attachments.mapNotNull { a ->
+                a.localUri?.let { PendingAttachment(a.id, Uri.parse(it), a.name, a.mimeType, a.sizeBytes) }
+            } else emptyList()
         }
         val all = (pending + fromHistory).distinctBy { it.id }
         if (all.isEmpty()) return prompt
@@ -170,13 +200,9 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
             append(prompt)
             all.forEach { file ->
                 if (file.sizeBytes > 15L * 1024L * 1024L) error("${file.name} is larger than the 15 MB Neo attachment limit.")
-                val mime = file.mimeType.lowercase()
-                if (mime.startsWith("text/") || mime == "application/json" || mime == "application/xml" || mime == "text/csv") {
-                    val data = appContext.contentResolver.openInputStream(file.uri)?.use { it.readBytes() }?.toString(Charsets.UTF_8).orEmpty()
-                    append("\n\n--- FILE: ${file.name} ---\n$data\n--- END FILE ---")
-                } else {
-                    append("\n\nAttached file: ${file.name} (${file.mimeType}, ${formatFileSize(file.sizeBytes)}). Do not claim to have read binary contents unless they are actually available to you.")
-                }
+                append("\n\n--- ATTACHMENT: ${file.name} (${formatFileSize(file.sizeBytes)}) ---\n")
+                append(AttachmentContentReader.readForPrompt(appContext.contentResolver, file.uri, file.name, file.mimeType))
+                append("\n--- END ATTACHMENT ---")
             }
         }
     }
@@ -185,8 +211,10 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
         val key = storage.getProviderKey(AiProvider.GEMINI.id).orEmpty()
         if (key.isBlank()) error("Gemini API key is not configured. Open Settings and add one.")
         val source = GeminiDataSource(client, apiKeyProvider = { storage.getProviderKey(AiProvider.GEMINI.id).orEmpty() })
+        updateThinkingStage(aiId, "Reviewing the request", if (pendingAttachments.isNotEmpty()) "Reading the attached context" else "Preparing the response")
         val messages = historyWithAttachments(pendingAttachments, source)
         val request = GeminiRequestMapper.buildRequest(messages, modelRef.modelId, systemPrompt = systemPromptStore.get())
+        updateThinkingStage(aiId, "Preparing the response", null)
         var accumulated = ""
         source.streamGenerateContent(modelRef.modelId, request).collect { chunk -> accumulated += chunk; updateStreaming(aiId, accumulated) }
         finishStreaming(aiId)
@@ -196,6 +224,7 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
         val key = storage.getProviderKey(modelRef.provider.id).orEmpty()
         if (key.isBlank()) error("${modelRef.provider.displayName} API key is not configured. Open Settings and add one.")
         val source = OpenAiCompatibleDataSource(client, { storage.getProviderKey(modelRef.provider.id).orEmpty() }, modelRef.provider.baseUrl, modelRef.provider.displayName)
+        updateThinkingStage(aiId, "Reviewing the request", "Preparing the provider request")
         val history = _state.value.messages.dropLast(1).filter { it.content.isNotBlank() || it.attachments.isNotEmpty() }
         val providerMessages = mutableListOf<OpenAiCompatibleDataSource.ProviderMessage>()
         for (msg in history) {
@@ -206,6 +235,7 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
                 providerMessages += OpenAiCompatibleDataSource.ProviderMessage(if (msg.role == MessageRole.USER) "user" else "assistant", msg.content)
             }
         }
+        updateThinkingStage(aiId, "Preparing the response", null)
         var accumulated = ""
         source.streamChat(modelRef.modelId, providerMessages, systemPrompt = systemPromptStore.get()).collect { chunk -> accumulated += chunk; updateStreaming(aiId, accumulated) }
         finishStreaming(aiId)
@@ -246,6 +276,40 @@ class ChatViewModel(context: Context, requestedChatId: String, modelId: String) 
         val user = _state.value.messages.lastOrNull { it.role == MessageRole.USER } ?: return
         val existing = messageDao.getMessagesForChatOnce(activeChatId).firstOrNull { it.id == user.id } ?: return
         messageDao.updateMessage(existing.copy(attachmentsJson = attachmentAdapter.toJson(user.attachments)))
+    }
+
+    private fun isLargeTask(prompt: String, attachments: List<PendingAttachment>): Boolean {
+        if (attachments.isNotEmpty()) return true
+        if (prompt.length >= 420) return true
+        val keywords = listOf("build", "code", "project", "repository", "repo", "analyze", "analysis", "research", "implement", "fix", "debug", "refactor", "file", "zip", "apk", "compare", "write a full", "create a full")
+        return keywords.count { prompt.contains(it, ignoreCase = true) } >= 1
+    }
+
+    private fun initialThinkingSteps(attachments: List<PendingAttachment>): List<AgentStep> = buildList {
+        add(AgentStep("understand", "Understanding the request", AgentStepState.IN_PROGRESS))
+        if (attachments.isNotEmpty()) add(AgentStep("files", "Reading the attached context", AgentStepState.PENDING))
+        add(AgentStep("prepare", "Preparing the response", AgentStepState.PENDING))
+    }
+
+    private fun updateThinkingStage(aiId: String, activeMessage: String, nextMessage: String?) {
+        _state.update { current ->
+            current.copy(messages = current.messages.map { item ->
+                if (item.id != aiId || item.agentSteps.isEmpty()) item else {
+                    val next = item.agentSteps.map { step ->
+                        when {
+                            step.message == activeMessage -> step.copy(state = AgentStepState.IN_PROGRESS)
+                            step.state == AgentStepState.IN_PROGRESS -> step.copy(state = AgentStepState.COMPLETED)
+                            else -> step
+                        }
+                    }.toMutableList()
+                    if (nextMessage != null) {
+                        val existingIndex = next.indexOfFirst { it.message == nextMessage }
+                        if (existingIndex >= 0) next[existingIndex] = next[existingIndex].copy(state = AgentStepState.IN_PROGRESS)
+                    }
+                    item.copy(agentSteps = next)
+                }
+            })
+        }
     }
 
     private fun updateStreaming(aiId: String, content: String) {

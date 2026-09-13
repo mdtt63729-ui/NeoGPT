@@ -2,6 +2,7 @@ package com.neogpt.app.data.remote.openai
 
 import android.content.ContentResolver
 import android.net.Uri
+import com.neogpt.app.files.AttachmentContentReader
 import android.util.Base64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -98,9 +99,11 @@ class OpenAiCompatibleDataSource(
                         )
                     )
                 }
-                mime.startsWith("text/") || mime == "application/json" || mime == "application/xml" -> {
-                    val textData = bytes.toString(Charsets.UTF_8)
-                    content.put(JSONObject().put("type", "text").put("text", "\n\n--- ${attachment.name} ---\n$textData"))
+                mime.startsWith("text/") || mime == "application/json" || mime == "application/xml" ||
+                    attachment.name.endsWith(".zip", true) || attachment.name.endsWith(".jar", true) || attachment.name.endsWith(".apk", true) ||
+                    attachment.name.endsWith(".docx", true) || attachment.name.endsWith(".xlsx", true) || attachment.name.endsWith(".pptx", true) -> {
+                    val extracted = AttachmentContentReader.readForPrompt(contentResolver, attachment.uri, attachment.name, mime)
+                    content.put(JSONObject().put("type", "text").put("text", "\n\n--- ${attachment.name} ---\n$extracted"))
                 }
                 else -> error("$providerName chat does not support ${attachment.mimeType} attachments in this build. Images, PDF and text files are supported.")
             }

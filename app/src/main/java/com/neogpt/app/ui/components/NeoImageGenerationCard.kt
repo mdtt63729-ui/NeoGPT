@@ -22,7 +22,8 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
-import androidx.compose.ui.input.pointer.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -119,12 +120,12 @@ fun NeoImageGenerationCard(
             ) { visible ->
                 if (visible) {
                     Surface(
+                        onClick = { showDownload = false; onDownload() },
                         modifier = Modifier.align(Alignment.BottomCenter).padding(14.dp),
                         shape = RoundedCornerShape(14.dp),
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
                         tonalElevation = 2.dp,
-                        onClick = { showDownload = false; onDownload() },
                     ) {
                         Row(Modifier.padding(horizontal = 15.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.Download, null, Modifier.size(19.dp))

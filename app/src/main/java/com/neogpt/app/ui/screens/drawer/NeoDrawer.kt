@@ -37,7 +37,7 @@ fun NeoDrawer(
     val database = (context.applicationContext as NeoGptApplication).database
     val chats by database.chatDao().getAllChats().collectAsState(initial = emptyList())
 
-    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface, drawerShape = NeoShapes.extraLarge, modifier = Modifier.width(NeoDimens.drawerWidth)) {
+    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface, drawerShape = NeoShapes.xlarge, modifier = Modifier.width(NeoDimens.drawerWidth)) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.neo_app_icon), null, Modifier.size(42.dp).clip(CircleShape))

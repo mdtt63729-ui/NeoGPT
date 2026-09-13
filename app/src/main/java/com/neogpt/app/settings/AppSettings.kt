@@ -42,7 +42,7 @@ class AppSettings private constructor(context: Context) {
         animations = prefs.getBoolean("animations", true),
         autoScroll = prefs.getBoolean("auto_scroll", true),
         haptics = prefs.getBoolean("haptics", true),
-        enterToSend = prefs.getBoolean("enter_send", true),
+        enterToSend = prefs.getBoolean("enter_send", false),
         showTimestamps = prefs.getBoolean("timestamps", false),
         responseTextScale = prefs.getFloat("response_text_scale", 1f).coerceIn(0.80f, 1.40f),
     )

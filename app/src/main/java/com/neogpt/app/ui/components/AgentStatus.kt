@@ -12,14 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,25 +20,21 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
-/** Model-neutral status event used by the chat UI. */
-enum class AgentStepState { IN_PROGRESS, COMPLETED, ERROR }
+enum class AgentStepState { PENDING, IN_PROGRESS, COMPLETED, ERROR }
 
 data class AgentStep(
     val id: String,
@@ -58,39 +47,67 @@ fun AgentStatusStack(
     steps: List<AgentStep>,
     modifier: Modifier = Modifier,
     onErrorClick: () -> Unit = {},
+    toolLabels: List<String> = emptyList(),
 ) {
     if (steps.isEmpty()) return
     var expanded by remember(steps.size) { mutableStateOf(false) }
     val active = steps.lastOrNull { it.state == AgentStepState.IN_PROGRESS } ?: steps.last()
 
     Column(
-        modifier = modifier
-            .animateContentSize(animationSpec = tween(260, easing = FastOutSlowInEasing)),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier.animateContentSize(tween(260, easing = FastOutSlowInEasing)),
+        verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        StepStatusPill(
-            step = active,
-            expanded = expanded,
-            canExpand = steps.size > 1 || active.state == AgentStepState.ERROR,
-            onClick = {
-                if (active.state == AgentStepState.ERROR) onErrorClick()
-                else if (steps.size > 1) expanded = !expanded
-            },
-        )
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = steps.size > 1 || active.state == AgentStepState.ERROR) {
+                    if (active.state == AgentStepState.ERROR) onErrorClick() else expanded = !expanded
+                },
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.76f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f)),
+        ) {
+            Column(Modifier.padding(horizontal = 13.dp, vertical = 10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Thoughts", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.width(8.dp))
+                    if (active.state == AgentStepState.IN_PROGRESS) NeoSoftThinkingDots()
+                    Spacer(Modifier.weight(1f))
+                    if (steps.size > 1) Icon(if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ChevronRight, null, Modifier.size(18.dp))
+                }
+                Spacer(Modifier.height(5.dp))
+                Text(active.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                if (toolLabels.isNotEmpty()) {
+                    Spacer(Modifier.height(5.dp))
+                    Text("Used ${toolLabels.size} tool${if (toolLabels.size == 1) "" else "s"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+
         AnimatedVisibility(
             visible = expanded && steps.size > 1,
-            enter = fadeIn(animationSpec = tween(180)),
-            exit = fadeOut(animationSpec = tween(140)),
+            enter = fadeIn(tween(180)),
+            exit = fadeOut(tween(140)),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                steps.dropLast(1).asReversed().forEach { step ->
-                    StepStatusPill(
-                        step = step,
-                        expanded = true,
-                        canExpand = false,
-                        onClick = {},
-                        compact = true,
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(start = 8.dp)) {
+                steps.forEach { step ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AgentStepGlyph(step.state)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            step.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                }
+                toolLabels.forEach { label ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(Modifier.size(16.dp), CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {}
+                        Spacer(Modifier.width(8.dp))
+                        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }
@@ -98,103 +115,46 @@ fun AgentStatusStack(
 }
 
 @Composable
-fun StepStatusPill(
-    step: AgentStep,
-    expanded: Boolean = false,
-    canExpand: Boolean = true,
-    onClick: () -> Unit = {},
-    compact: Boolean = false,
-) {
-    val shape = RoundedCornerShape(if (compact) 10.dp else 12.dp)
-    Surface(
-        modifier = Modifier
-            .clickable(enabled = canExpand, onClick = onClick)
-            .then(if (canExpand) Modifier else Modifier),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = shape,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = if (compact) 10.dp else 12.dp, vertical = if (compact) 5.dp else 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StatusGlyph(step.state, compact)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = step.message,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+private fun NeoSoftThinkingDots() {
+    val transition = rememberInfiniteTransition(label = "agent-dots")
+    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+        repeat(3) { index ->
+            val pulse by transition.animateFloat(
+                0.70f, 1f,
+                infiniteRepeatable(tween(820, delayMillis = index * 120, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                label = "agent-dot-$index",
             )
-            if (canExpand) {
-                Spacer(Modifier.width(4.dp))
-                Icon(
-                    imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ChevronRight,
-                    contentDescription = if (expanded) "Collapse status details" else "Expand status details",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            androidx.compose.foundation.layout.Box(Modifier.size(4.dp).scale(pulse).alpha(pulse)) {
+                Surface(Modifier.size(4.dp), CircleShape, color = MaterialTheme.colorScheme.primary) {}
             }
         }
     }
 }
 
 @Composable
-private fun StatusGlyph(state: AgentStepState, compact: Boolean) {
+private fun AgentStepGlyph(state: AgentStepState) {
     when (state) {
-        AgentStepState.IN_PROGRESS -> {
-            CircularProgressIndicator(
-                modifier = Modifier.size(if (compact) 11.dp else 12.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
-            )
+        AgentStepState.PENDING -> Surface(Modifier.size(16.dp), CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {}
+        AgentStepState.IN_PROGRESS -> NeoSoftThinkingDots()
+        AgentStepState.COMPLETED -> Surface(Modifier.size(16.dp), CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)) {
+            Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Check, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.primary) }
         }
-        AgentStepState.COMPLETED -> {
-            Surface(
-                modifier = Modifier.size(if (compact) 16.dp else 18.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Check, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-        }
-        AgentStepState.ERROR -> {
-            Surface(
-                modifier = Modifier.size(if (compact) 16.dp else 18.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Close, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.error)
-                }
-            }
+        AgentStepState.ERROR -> Surface(Modifier.size(16.dp), CircleShape, color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f)) {
+            Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Close, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.error) }
         }
     }
 }
 
 @Composable
-fun PulsingDotGrid(
-    progress: Int,
-    modifier: Modifier = Modifier,
-) {
+fun PulsingDotGrid(progress: Int, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "image-dot-grid")
     val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        0f, 1f,
+        infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "image-grid-phase",
     )
     val primary = MaterialTheme.colorScheme.primary
     val completed = (progress.coerceIn(0, 100) / 100f) * 25f
-
     androidx.compose.foundation.Canvas(modifier) {
         val columns = 5
         val rows = 5
@@ -208,14 +168,7 @@ fun PulsingDotGrid(
             val progressAlpha = if (index < completed) 0.72f else 0.18f
             val alpha = (progressAlpha + wave * 0.18f).coerceIn(0f, 1f)
             val radius = (1.9f + wave * 0.9f).dp.toPx()
-            drawCircle(
-                color = primary.copy(alpha = alpha),
-                radius = radius,
-                center = androidx.compose.ui.geometry.Offset(
-                    spacingX * (column + 1),
-                    spacingY * (row + 1),
-                ),
-            )
+            drawCircle(primary.copy(alpha = alpha), radius, androidx.compose.ui.geometry.Offset(spacingX * (column + 1), spacingY * (row + 1)))
         }
     }
 }

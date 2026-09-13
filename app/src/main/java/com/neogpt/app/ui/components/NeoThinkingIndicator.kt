@@ -16,49 +16,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
-import com.neogpt.app.ui.theme.NeoSpacing
 
-/**
- * Quiet, low-amplitude thinking treatment. It deliberately avoids bars, glows and
- * scale jumps so the response area never flashes while a stream is starting.
- */
+/** Quiet thinking treatment: text + three soft dots, never a spinning ring. */
 @Composable
 fun NeoThinkingIndicator(label: String = "Thinking", modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "neo-thinking")
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-    ) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         repeat(3) { index ->
-            val phase by transition.animateFloat(
-                initialValue = 0.72f,
-                targetValue = 1f,
+            val alpha by transition.animateFloat(
+                initialValue = 0.22f,
+                targetValue = 0.90f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(760, delayMillis = index * 120, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse,
+                    tween(900, delayMillis = index * 150, easing = FastOutSlowInEasing),
+                    RepeatMode.Reverse,
                 ),
-                label = "thinking-dot-$index",
+                label = "thinking-dot-alpha-$index",
             )
-            androidx.compose.foundation.layout.Box(
-                Modifier
-                    .size(6.dp)
-                    .scale(0.86f + phase * 0.14f)
-                    .alpha(0.42f + phase * 0.58f),
-            ) {
-                androidx.compose.material3.Surface(
-                    modifier = Modifier.size(6.dp),
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                ) {}
+            androidx.compose.foundation.layout.Box(Modifier.size(4.dp).alpha(alpha)) {
+                androidx.compose.material3.Surface(Modifier.size(4.dp), androidx.compose.foundation.shape.CircleShape, color = MaterialTheme.colorScheme.onSurfaceVariant) {}
             }
         }
-        Text(
-            label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }

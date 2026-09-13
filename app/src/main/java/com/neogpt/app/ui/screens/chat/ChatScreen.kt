@@ -122,14 +122,10 @@ fun ChatScreen(
     // at the bottom; a real animation is used only for newly inserted messages.
     LaunchedEffect(appSettings.autoScroll) {
         snapshotFlow {
-            Triple(
-                state.messages.size,
-                state.messages.lastOrNull()?.content?.length ?: 0,
-                isNearBottom,
-            )
-        }.sample(60).collect { (messageCount, _, nearBottom) ->
-            if (appSettings.autoScroll && messageCount > 0 && nearBottom) {
-                listState.scrollToItem(listState.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1)
+            state.messages.lastOrNull()?.content?.length ?: 0
+        }.sample(140).collect {
+            if (appSettings.autoScroll && isNearBottom && state.messages.isNotEmpty()) {
+                listState.scrollToItem(state.messages.lastIndex)
             }
         }
     }
@@ -176,7 +172,7 @@ fun ChatScreen(
                             composerText = ""; selectedFile = null; editingMessageId = null
                         }
                     },
-                    onAddClick = { filePicker.launch(arrayOf("image/*", "application/pdf", "text/*", "audio/*", "video/*", "application/octet-stream")) },
+                    onAddClick = { filePicker.launch(arrayOf("*/*")) },
                     onImageClick = {
                         if (!composerText.trimStart().startsWith("/image", ignoreCase = true)) {
                             composerText = if (composerText.isBlank()) "/image " else "/image ${composerText.trimStart()}"
@@ -291,15 +287,9 @@ fun ChatScreen(
 private fun ChatWelcome(modifier: Modifier = Modifier) {
     Column(modifier.padding(horizontal = NeoSpacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(com.neogpt.app.R.drawable.neo_app_icon),
-            contentDescription = "Neo GPT",
-            modifier = Modifier.size(92.dp),
-        )
-        Spacer(Modifier.height(18.dp))
-        Text("Neo GPT", style = MaterialTheme.typography.displaySmall)
+        Text("What can I help you with?", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
-        Text("What can I help you with?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Ask anything, share a file, or start a voice conversation.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.weight(1.2f))
     }
 }

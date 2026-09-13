@@ -264,7 +264,7 @@ private fun AboutSettings() {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
         item {
             NeoSectionTitle("About", "Neo GPT product information.")
-            NeoFeatureCard(Icons.Rounded.AutoAwesome, "Neo GPT", "Version 1.7.0 • Material 3 • Multi-provider AI", {})
+            NeoFeatureCard(Icons.Rounded.AutoAwesome, "Neo GPT", "Version 1.8.0 • Material 3 • Multi-provider AI", {})
             Spacer(Modifier.height(NeoSpacing.sm))
             NeoFeatureCard(Icons.Rounded.DesignServices, "Design system", "Clean Material 3 surfaces, responsive motion and premium chat interactions.", {})
         }

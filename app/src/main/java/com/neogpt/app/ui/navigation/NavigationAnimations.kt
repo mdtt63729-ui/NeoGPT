@@ -1,38 +1,35 @@
 package com.neogpt.app.ui.navigation
 
-import androidx.compose.animation.*
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
+import androidx.navigation.compose.AnimatedContentTransitionScope
 
-// One restrained motion language across every screen. The curve is deliberately
-// soft at the end so screens settle instead of snapping/flashing into place.
-private val NeoEase = CubicBezierEasing(0.22f, 1.0f, 0.36f, 1.0f)
-private const val ENTER_DURATION = 320
-private const val EXIT_DURATION = 250
+// One calm motion language. No overshoot, no snap, and no stacked long animations.
+private val NeoEase = CubicBezierEasing(0.16f, 1.0f, 0.3f, 1.0f)
+private const val ENTER_DURATION = 280
+private const val EXIT_DURATION = 220
 
 fun AnimatedContentTransitionScope<*>.iosEnter(): EnterTransition =
-    slideInHorizontally(
-        animationSpec = tween(ENTER_DURATION, easing = NeoEase),
-        initialOffsetX = { fullWidth -> fullWidth },
-    ) + fadeIn(tween(ENTER_DURATION, easing = NeoEase), initialAlpha = 0.92f)
+    slideInHorizontally(tween(ENTER_DURATION, easing = NeoEase)) { it / 5 } +
+        fadeIn(tween(ENTER_DURATION, easing = NeoEase), initialAlpha = 0.98f)
 
 fun AnimatedContentTransitionScope<*>.iosExit(): ExitTransition =
-    slideOutHorizontally(
-        animationSpec = tween(EXIT_DURATION, easing = NeoEase),
-        targetOffsetX = { fullWidth -> -fullWidth / 4 },
-    ) + fadeOut(tween(EXIT_DURATION, easing = NeoEase), targetAlpha = 0.96f)
+    slideOutHorizontally(tween(EXIT_DURATION, easing = NeoEase)) { -it / 6 } +
+        fadeOut(tween(EXIT_DURATION, easing = NeoEase), targetAlpha = 0.98f)
 
 fun AnimatedContentTransitionScope<*>.iosPopEnter(): EnterTransition =
-    slideInHorizontally(
-        animationSpec = tween(ENTER_DURATION, easing = NeoEase),
-        initialOffsetX = { fullWidth -> -fullWidth / 4 },
-    ) + fadeIn(tween(ENTER_DURATION, easing = NeoEase), initialAlpha = 0.96f)
+    slideInHorizontally(tween(ENTER_DURATION, easing = NeoEase)) { -it / 6 } +
+        fadeIn(tween(ENTER_DURATION, easing = NeoEase), initialAlpha = 0.98f)
 
 fun AnimatedContentTransitionScope<*>.iosPopExit(): ExitTransition =
-    slideOutHorizontally(
-        animationSpec = tween(EXIT_DURATION, easing = NeoEase),
-        targetOffsetX = { fullWidth -> fullWidth },
-    ) + fadeOut(tween(EXIT_DURATION, easing = NeoEase), targetAlpha = 0.94f)
+    slideOutHorizontally(tween(EXIT_DURATION, easing = NeoEase)) { it / 5 } +
+        fadeOut(tween(EXIT_DURATION, easing = NeoEase), targetAlpha = 0.98f)
 
 fun AnimatedContentTransitionScope<*>.slideUpEnter(): EnterTransition = iosEnter()
 fun AnimatedContentTransitionScope<*>.slideHorizontalEnter(): EnterTransition = iosEnter()
