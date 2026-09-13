@@ -59,7 +59,7 @@ fun NeoComposer(
 private fun ComposerContent(
     text: String, onTextChange: (String) -> Unit, onSend: () -> Unit, onAddClick: () -> Unit, onImageClick: () -> Unit,
     modifier: Modifier, onVoiceClick: () -> Unit, onVoiceStop: () -> Unit, isListening: Boolean, voiceTranscript: String,
-    onLiveClick: () -> Unit, isGenerating: Boolean, onStop: () -> Unit, attachments: List<AttachmentChip>,
+    voiceRmsLevel: Float, onLiveClick: () -> Unit, isGenerating: Boolean, onStop: () -> Unit, attachments: List<AttachmentChip>,
     onRemoveAttachment: (String) -> Unit, activeMode: ComposerMode?, placeholder: String, enterToSend: Boolean,
 ) {
     var showAddMenu by remember { mutableStateOf(false) }
