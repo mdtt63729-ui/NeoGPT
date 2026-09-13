@@ -20,6 +20,8 @@ import com.neogpt.app.data.remote.openai.OpenAiCompatibleDataSource
 import com.neogpt.app.domain.model.Attachment
 import com.neogpt.app.domain.model.Message
 import com.neogpt.app.security.SecureStorage
+import com.neogpt.app.ui.components.AgentStep
+import com.neogpt.app.ui.components.AgentStepState
 import com.neogpt.app.ui.components.ComposerMode
 import com.neogpt.app.ui.components.MessageRole
 import com.neogpt.app.ui.components.NeoMessageData
@@ -27,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
