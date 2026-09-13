@@ -39,7 +39,6 @@ class AppSettings private constructor(context: Context) {
     private fun readState(): State = State(
         themeMode = runCatching { ThemeMode.valueOf(prefs.getString("theme", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name) }.getOrDefault(ThemeMode.SYSTEM),
         dynamicColor = prefs.getBoolean("dynamic", true),
-        liquidGlass = false,
         animations = prefs.getBoolean("animations", true),
         autoScroll = prefs.getBoolean("auto_scroll", true),
         haptics = prefs.getBoolean("haptics", true),
@@ -51,7 +50,6 @@ class AppSettings private constructor(context: Context) {
     data class State(
         val themeMode: ThemeMode,
         val dynamicColor: Boolean,
-        val liquidGlass: Boolean = false,
         val animations: Boolean,
         val autoScroll: Boolean,
         val haptics: Boolean,

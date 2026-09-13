@@ -156,6 +156,7 @@ fun ChatScreen(
                         else recordPermission.launch(Manifest.permission.RECORD_AUDIO)
                     },
                     onVoiceStop = { voiceManager?.stopListening() },
+                    onVoiceCancel = { voiceManager?.cancelListening(); voiceTranscript = ""; voiceRmsLevel = 0f; composerText = "" },
                     isListening = listening,
                     voiceTranscript = voiceTranscript,
                     voiceRmsLevel = voiceRmsLevel,

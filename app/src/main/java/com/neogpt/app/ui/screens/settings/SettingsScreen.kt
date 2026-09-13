@@ -1,29 +1,205 @@
 package com.neogpt.app.ui.screens.settings
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.neogpt.app.ai.AiProvider
-import com.neogpt.app.security.SecureStorage
 import com.neogpt.app.security.AdminAuth
+import com.neogpt.app.security.SecureStorage
 import com.neogpt.app.settings.AppSettings
+import com.neogpt.app.settings.SystemPromptStore
 import com.neogpt.app.ui.components.*
 import com.neogpt.app.ui.theme.NeoShapes
 import com.neogpt.app.ui.theme.NeoSpacing
 
+private enum class SettingsCategory(
+    val title: String,
+    val description: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
+    APPEARANCE("Appearance", "Theme, colors and motion", Icons.Rounded.Palette),
+    CHAT("Chat & composer", "Input, voice and response controls", Icons.Rounded.ChatBubbleOutline),
+    AI("AI behavior", "Global system prompt and response rules", Icons.Rounded.AutoAwesome),
+    PROVIDERS("AI providers & models", "API keys and model routing", Icons.Rounded.Hub),
+    SECURITY("Admin & security", "Admin access and local privacy", Icons.Rounded.Security),
+    ABOUT("About", "Version and product information", Icons.Rounded.Info),
+}
+
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
+    var selected by remember { mutableStateOf<SettingsCategory?>(null) }
+
+    AnimatedContent(
+        targetState = selected,
+        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        label = "settings-category-navigation",
+    ) { category ->
+        if (category == null) {
+            SettingsCategoryHome(onBack = onBack) { selected = it }
+        } else {
+            SettingsCategoryDetail(category = category, onBack = { selected = null }, onAdminLogin = onAdminLogin)
+        }
+    }
+}
+
+@Composable
+private fun SettingsCategoryHome(onBack: () -> Unit, onOpen: (SettingsCategory) -> Unit) {
+    NeoPage("Settings", onBack) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = NeoSpacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(NeoSpacing.sm),
+        ) {
+            item {
+                Spacer(Modifier.height(NeoSpacing.sm))
+                Text("Settings", style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Everything is organized into focused sections so you can change one part of Neo GPT without hunting through a long page.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(NeoSpacing.lg))
+            }
+            items(SettingsCategory.values().size) { index ->
+                val category = SettingsCategory.values()[index]
+                NeoFeatureCard(
+                    icon = category.icon,
+                    title = category.title,
+                    description = category.description,
+                    onClick = { onOpen(category) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsCategoryDetail(
+    category: SettingsCategory,
+    onBack: () -> Unit,
+    onAdminLogin: () -> Unit,
+) {
     val context = LocalContext.current
     val storage = remember { SecureStorage(context) }
     val settings = remember { AppSettings.get(context) }
     val ui by settings.state.collectAsState()
+    val systemPromptStore = remember { SystemPromptStore(context) }
+    val adminAuth = remember { AdminAuth(context) }
+    var adminLoggedIn by remember { mutableStateOf(adminAuth.isLoggedIn()) }
+
+    NeoPage(category.title, onBack) {
+        when (category) {
+            SettingsCategory.APPEARANCE -> AppearanceSettings(settings, ui)
+            SettingsCategory.CHAT -> ChatSettings(settings, ui)
+            SettingsCategory.AI -> AiBehaviorSettings(systemPromptStore)
+            SettingsCategory.PROVIDERS -> ProviderSettings(storage)
+            SettingsCategory.SECURITY -> SecuritySettings(adminAuth, adminLoggedIn, onAdminLogin) { adminLoggedIn = it }
+            SettingsCategory.ABOUT -> AboutSettings()
+        }
+    }
+}
+
+@Composable
+private fun AppearanceSettings(settings: AppSettings, ui: AppSettings.State) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+        item {
+            NeoSectionTitle("Appearance", "Standard Material 3 surfaces are used throughout the app. Liquid Glass has been removed.")
+            SettingSwitchCard(Icons.Rounded.AutoAwesomeMotion, "Smooth animations", "Keep Neo GPT's motion and interaction animations enabled.", ui.animations) { settings.setAnimations(it) }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            SettingSwitchCard(Icons.Rounded.Palette, "Dynamic Material colors", "Use Android dynamic colors when available.", ui.dynamicColor) { settings.setDynamicColor(it) }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            ThemeModeCard(ui.themeMode) { settings.setThemeMode(it) }
+        }
+    }
+}
+
+@Composable
+private fun ChatSettings(settings: AppSettings, ui: AppSettings.State) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+        item {
+            NeoSectionTitle("Chat", "Tune the composer and AI response experience.")
+            SettingSwitchCard(Icons.Rounded.VerticalAlignBottom, "Auto-scroll AI responses", "Keep the newest streamed content in view unless you scroll upward.", ui.autoScroll) { settings.setAutoScroll(it) }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            SettingSwitchCard(Icons.Rounded.Send, "Enter to send", "Use the keyboard Send action to submit the current message.", ui.enterToSend) { settings.setEnterToSend(it) }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            SettingSwitchCard(Icons.Rounded.Vibration, "Haptic feedback", "Use subtle haptics for supported primary interactions.", ui.haptics) { settings.setHaptics(it) }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            SettingSwitchCard(Icons.Rounded.Schedule, "Show message timestamps", "Display message time metadata where supported.", ui.showTimestamps) { settings.setShowTimestamps(it) }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            ResponseTextSizeCard(ui.responseTextScale) { settings.setResponseTextScale(it) }
+        }
+    }
+}
+
+@Composable
+private fun AiBehaviorSettings(store: SystemPromptStore) {
+    var systemPrompt by remember { mutableStateOf(store.get()) }
+    var saved by remember { mutableStateOf(systemPrompt.isNotBlank()) }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+        item {
+            NeoSectionTitle("AI behavior", "One global instruction is sent to every text-capable AI route used by Neo GPT.")
+            ElevatedCard(Modifier.fillMaxWidth(), shape = NeoShapes.large) {
+                Column(Modifier.padding(NeoSpacing.lg)) {
+                    Text("Global system prompt", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(NeoSpacing.xs))
+                    Text(
+                        "Write the behavior, formatting rules and response style you want the connected models to follow. Provider safety policies and higher-priority instructions can still override it.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(NeoSpacing.md))
+                    OutlinedTextField(
+                        value = systemPrompt,
+                        onValueChange = { systemPrompt = it; saved = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 7,
+                        maxLines = 16,
+                        label = { Text("System prompt") },
+                        placeholder = { Text("Example: Always answer clearly, use Markdown, and follow these rules…") },
+                        shape = NeoShapes.large,
+                    )
+                    Spacer(Modifier.height(NeoSpacing.sm))
+                    Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
+                        Button(
+                            onClick = { store.save(systemPrompt); systemPrompt = store.get(); saved = true },
+                            enabled = systemPrompt.isNotBlank(),
+                            shape = NeoShapes.pill,
+                        ) {
+                            Icon(Icons.Rounded.Save, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(if (saved) "Saved" else "Save prompt")
+                        }
+                        if (systemPrompt.isNotBlank()) {
+                            OutlinedButton(onClick = { store.clear(); systemPrompt = ""; saved = false }, shape = NeoShapes.pill) { Text("Clear") }
+                        }
+                    }
+                    Spacer(Modifier.height(NeoSpacing.sm))
+                    Text(
+                        "Applied to Gemini, OpenRouter, NVIDIA NIM, Neo 4.1 Alpha and Gemini-powered Research where the provider supports system-level instructions.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderSettings(storage: SecureStorage) {
     var gemini by remember { mutableStateOf(storage.getProviderKey(AiProvider.GEMINI.id).orEmpty()) }
     var openRouter by remember { mutableStateOf(storage.getProviderKey(AiProvider.OPENROUTER.id).orEmpty()) }
     var nvidia by remember { mutableStateOf(storage.getProviderKey(AiProvider.NVIDIA.id).orEmpty()) }
@@ -31,108 +207,53 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
     var showOpenRouter by remember { mutableStateOf(false) }
     var showNvidia by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf<String?>(null) }
-    val systemPromptStore = remember { com.neogpt.app.settings.SystemPromptStore(context) }
-    var systemPrompt by remember { mutableStateOf(systemPromptStore.get()) }
-    var systemPromptSaved by remember { mutableStateOf(systemPrompt.isNotBlank()) }
-    val adminAuth = remember { AdminAuth(context) }
-    var adminLoggedIn by remember { mutableStateOf(adminAuth.isLoggedIn()) }
 
-    NeoPage("Settings", onBack) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
-            item {
-        NeoSectionTitle("Appearance", "Changes apply instantly across the app.")
-        SettingSwitchCard(Icons.Rounded.AutoAwesomeMotion, "Smooth animations", "Keep Neo GPT's motion, press and transition animations enabled.", ui.animations) { settings.setAnimations(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        SettingSwitchCard(Icons.Rounded.Palette, "Dynamic Material colors", "Use Android dynamic colors when available. Turn off for Neo GPT's fixed palette.", ui.dynamicColor) { settings.setDynamicColor(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        ThemeModeCard(ui.themeMode) { settings.setThemeMode(it) }
-
-        NeoSectionTitle("Chat", "Controls that change live chat behavior immediately.")
-        SettingSwitchCard(Icons.Rounded.VerticalAlignBottom, "Auto-scroll AI responses", "Keep the newest streamed AI content in view unless you scroll upward yourself.", ui.autoScroll) { settings.setAutoScroll(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        SettingSwitchCard(Icons.Rounded.Send, "Enter to send", "Pressing the keyboard Send action sends the current message. Turn off to keep Enter as a newline.", ui.enterToSend) { settings.setEnterToSend(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        SettingSwitchCard(Icons.Rounded.Vibration, "Haptic feedback", "Use subtle Android haptics for supported primary interactions.", ui.haptics) { settings.setHaptics(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        SettingSwitchCard(Icons.Rounded.Schedule, "Show message timestamps", "Display message time metadata where supported by the conversation UI.", ui.showTimestamps) { settings.setShowTimestamps(it) }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        ResponseTextSizeCard(ui.responseTextScale) { settings.setResponseTextScale(it) }
-
-        NeoSectionTitle("AI behavior", "One system instruction is applied to every text-capable AI you use in Neo GPT.")
-        ElevatedCard(Modifier.fillMaxWidth(), shape = NeoShapes.large) {
-            Column(Modifier.padding(NeoSpacing.lg)) {
-                Text("Global system prompt", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(NeoSpacing.xs))
-                Text(
-                    "Describe how the AI should behave, respond, format answers, or follow your preferred rules. Neo GPT sends this as a system-level instruction where the provider supports it.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(NeoSpacing.md))
-                OutlinedTextField(
-                    value = systemPrompt,
-                    onValueChange = { systemPrompt = it; systemPromptSaved = false },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 6,
-                    maxLines = 12,
-                    label = { Text("System prompt") },
-                    placeholder = { Text("Example: Always answer in Bengali, be concise, and use clear bullet points…") },
-                    shape = NeoShapes.large,
-                )
-                Spacer(Modifier.height(NeoSpacing.sm))
-                Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm)) {
-                    Button(
-                        onClick = { systemPromptStore.save(systemPrompt); systemPrompt = systemPromptStore.get(); systemPromptSaved = true },
-                        enabled = systemPrompt.isNotBlank(),
-                        shape = NeoShapes.pill,
-                    ) {
-                        Icon(Icons.Rounded.Save, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (systemPromptSaved) "Saved" else "Save prompt")
-                    }
-                    if (systemPrompt.isNotBlank()) {
-                        OutlinedButton(
-                            onClick = { systemPromptStore.clear(); systemPrompt = ""; systemPromptSaved = false },
-                            shape = NeoShapes.pill,
-                        ) { Text("Clear") }
-                    }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+        item {
+            NeoSectionTitle("AI providers", "Connect supported providers. API keys are kept in encrypted local storage.")
+            ProviderSettingCard(AiProvider.GEMINI, gemini, { gemini = it }, showGemini, { showGemini = !showGemini }, saved == "gemini", { storage.clearProviderKey(AiProvider.GEMINI.id); gemini = ""; saved = null }) { storage.saveProviderKey(AiProvider.GEMINI.id, gemini); saved = "gemini" }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            ProviderSettingCard(AiProvider.OPENROUTER, openRouter, { openRouter = it }, showOpenRouter, { showOpenRouter = !showOpenRouter }, saved == "openrouter", { storage.clearProviderKey(AiProvider.OPENROUTER.id); openRouter = ""; saved = null }) { storage.saveProviderKey(AiProvider.OPENROUTER.id, openRouter); saved = "openrouter" }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            ProviderSettingCard(AiProvider.NVIDIA, nvidia, { nvidia = it }, showNvidia, { showNvidia = !showNvidia }, saved == "nvidia", { storage.clearProviderKey(AiProvider.NVIDIA.id); nvidia = ""; saved = null }) { storage.saveProviderKey(AiProvider.NVIDIA.id, nvidia); saved = "nvidia" }
+            NeoSectionTitle("Model routing", "Configured providers appear in the model picker.")
+            ElevatedCard(Modifier.fillMaxWidth(), shape = NeoShapes.large) {
+                Column {
+                    ListItem(headlineContent = { Text("Gemini") }, supportingContent = { Text("Native Gemini API models") }, leadingContent = { Icon(Icons.Rounded.AutoAwesome, null) })
+                    ListItem(headlineContent = { Text("OpenRouter") }, supportingContent = { Text("OpenAI-compatible streaming models") }, leadingContent = { Icon(Icons.Rounded.Hub, null) })
+                    ListItem(headlineContent = { Text("NVIDIA NIM") }, supportingContent = { Text("NVIDIA chat-capable catalog models") }, leadingContent = { Icon(Icons.Rounded.Memory, null) })
                 }
-                Spacer(Modifier.height(NeoSpacing.xs))
-                Text(
-                    "Applied to Gemini, OpenRouter, NVIDIA NIM, Neo 4.1 Alpha, and Gemini-powered Research. Provider safety rules and higher-priority instructions can still override it.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
+    }
+}
 
-        NeoSectionTitle("Admin access", "Neo 4.1 Alpha is hidden until local admin login is completed.")
-        if (adminLoggedIn) {
-            NeoFeatureCard(Icons.Rounded.AdminPanelSettings, "Admin mode enabled", "Neo 4.1 Alpha is available in the model picker.", {
-                adminAuth.logout(); adminLoggedIn = false
-            })
-        } else {
-            NeoFeatureCard(Icons.Rounded.Lock, "Admin login", "Login locally to unlock Neo 4.1 Alpha. No Firebase or backend is used.", onAdminLogin)
-        }
-
-        NeoSectionTitle("AI providers", "Connect Gemini, OpenRouter and NVIDIA NIM. Keys remain encrypted on this device.")
-        ProviderSettingCard(AiProvider.GEMINI, gemini, { gemini = it }, showGemini, { showGemini = !showGemini }, saved == "gemini", { storage.clearProviderKey(AiProvider.GEMINI.id); gemini = ""; saved = null }) { storage.saveProviderKey(AiProvider.GEMINI.id, gemini); saved = "gemini" }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        ProviderSettingCard(AiProvider.OPENROUTER, openRouter, { openRouter = it }, showOpenRouter, { showOpenRouter = !showOpenRouter }, saved == "openrouter", { storage.clearProviderKey(AiProvider.OPENROUTER.id); openRouter = ""; saved = null }) { storage.saveProviderKey(AiProvider.OPENROUTER.id, openRouter); saved = "openrouter" }
-        Spacer(Modifier.height(NeoSpacing.sm))
-        ProviderSettingCard(AiProvider.NVIDIA, nvidia, { nvidia = it }, showNvidia, { showNvidia = !showNvidia }, saved == "nvidia", { storage.clearProviderKey(AiProvider.NVIDIA.id); nvidia = ""; saved = null }) { storage.saveProviderKey(AiProvider.NVIDIA.id, nvidia); saved = "nvidia" }
-
-        NeoSectionTitle("Model routing", "Configured providers appear in the model picker. Admin-only Neo 4.1 Alpha is independent of provider keys.")
-        ElevatedCard(Modifier.fillMaxWidth()) {
-            ListItem(headlineContent = { Text("Gemini") }, supportingContent = { Text("Native Gemini API models") }, leadingContent = { Icon(Icons.Rounded.AutoAwesome, null) })
-            ListItem(headlineContent = { Text("OpenRouter") }, supportingContent = { Text("OpenAI-compatible streaming models") }, leadingContent = { Icon(Icons.Rounded.Hub, null) })
-            ListItem(headlineContent = { Text("NVIDIA NIM") }, supportingContent = { Text("NVIDIA chat-capable catalog models") }, leadingContent = { Icon(Icons.Rounded.Memory, null) })
-        }
-        Spacer(Modifier.height(NeoSpacing.lg))
-        NeoFeatureCard(Icons.Rounded.Security, "Privacy & security", "Provider API keys stay in encrypted Android Keystore-backed storage.", {})
-        Spacer(Modifier.height(NeoSpacing.sm))
-        NeoFeatureCard(Icons.Rounded.Info, "About Neo GPT", "Version 1.4.0 • Material 3 • Multi-provider AI", {})
+@Composable
+private fun SecuritySettings(adminAuth: AdminAuth, loggedIn: Boolean, onAdminLogin: () -> Unit, setLoggedIn: (Boolean) -> Unit) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+        item {
+            NeoSectionTitle("Admin & security", "Local access controls and privacy information.")
+            if (loggedIn) {
+                NeoFeatureCard(Icons.Rounded.AdminPanelSettings, "Admin mode enabled", "Neo 4.1 Alpha is available in the model picker.", {
+                    adminAuth.logout(); setLoggedIn(false)
+                })
+            } else {
+                NeoFeatureCard(Icons.Rounded.Lock, "Admin login", "Login locally to unlock Neo 4.1 Alpha. No Firebase or backend is used.", onAdminLogin)
             }
+            Spacer(Modifier.height(NeoSpacing.sm))
+            NeoFeatureCard(Icons.Rounded.Security, "Local API key protection", "Provider keys remain in encrypted Android Keystore-backed storage.", {})
+        }
+    }
+}
+
+@Composable
+private fun AboutSettings() {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+        item {
+            NeoSectionTitle("About", "Neo GPT product information.")
+            NeoFeatureCard(Icons.Rounded.AutoAwesome, "Neo GPT", "Version 1.6.0 • Material 3 • Multi-provider AI", {})
+            Spacer(Modifier.height(NeoSpacing.sm))
+            NeoFeatureCard(Icons.Rounded.DesignServices, "Design system", "Clean Material 3 surfaces, responsive motion and premium chat interactions.", {})
         }
     }
 }
@@ -186,9 +307,9 @@ private fun ThemeModeCard(current: AppSettings.ThemeMode, onChange: (AppSettings
 
 @Composable
 private fun ProviderSettingCard(provider: AiProvider, value: String, onValueChange: (String) -> Unit, visible: Boolean, onToggle: () -> Unit, isSaved: Boolean, onClear: () -> Unit, onSave: () -> Unit) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    ElevatedCard(Modifier.fillMaxWidth(), shape = NeoShapes.large) {
         Column(Modifier.padding(NeoSpacing.lg)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(NeoSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Key, null)
                 Column(Modifier.weight(1f)) {
                     Text(provider.displayName, style = MaterialTheme.typography.titleMedium)

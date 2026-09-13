@@ -136,6 +136,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                 },
                 onVoiceClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) voiceManager?.startListening() else recordPermission.launch(Manifest.permission.RECORD_AUDIO) },
                 onVoiceStop = { voiceManager?.stopListening() },
+                onVoiceCancel = { voiceManager?.cancelListening(); voiceTranscript = ""; voiceRmsLevel = 0f; composerText = "" },
                 isListening = listening, voiceTranscript = voiceTranscript, voiceRmsLevel = voiceRmsLevel,
                 onLiveClick = onOpenLive,
                 attachments = if (selectedUri != null) listOf(AttachmentChip("home", selectedName, homeAttachmentType(selectedMime))) else emptyList(),

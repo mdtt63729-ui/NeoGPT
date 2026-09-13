@@ -1,7 +1,10 @@
 package com.neogpt.app.ui.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,69 +12,67 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 import kotlin.math.sin
 
-/** ECG-inspired speech trace whose amplitude follows SpeechRecognizer RMS input. */
+/**
+ * Low-overhead voice waveform inspired by modern voice-recording composers.
+ * RMS input controls the live amplitude while a subtle phase animation keeps
+ * the trace alive between SpeechRecognizer callbacks.
+ */
 @Composable
 fun NeoVoiceWaveform(
     rmsLevel: Float,
     modifier: Modifier = Modifier,
 ) {
-    val level by animateFloatAsState(
-        targetValue = rmsLevel.coerceIn(0f, 1f),
-        animationSpec = tween(90, easing = FastOutSlowInEasing),
-        label = "voice-rms",
+    val transition = rememberInfiniteTransition(label = "voice-wave")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = (Math.PI * 2.0).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "voice-phase",
     )
-    val primary = MaterialTheme.colorScheme.primary
-    val track = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f)
+    val level = rmsLevel.coerceIn(0f, 1f)
+    val active = MaterialTheme.colorScheme.onSurface
+    val inactive = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.30f)
 
-    Canvas(modifier.fillMaxWidth().height(38.dp)) {
-        val centerY = size.height / 2f
-        val width = size.width
-        val amplitude = size.height * (0.08f + level * 0.36f)
-        val cycleCount = 3.5f + level * 5.0f
-        val cycleWidth = (width / cycleCount).coerceAtLeast(1f)
-        val path = Path()
+    Canvas(modifier.fillMaxWidth().height(34.dp)) {
+        drawVoiceBars(level, phase, active, inactive)
+    }
+}
 
-        fun ecgOffset(progress: Float): Float {
-            return when {
-                progress < 0.40f -> 0f
-                progress < 0.445f -> -amplitude * 0.18f
-                progress < 0.475f -> amplitude * 0.10f
-                progress < 0.505f -> -amplitude * 1.00f
-                progress < 0.535f -> amplitude * 0.78f
-                progress < 0.57f -> -amplitude * 0.22f
-                progress < 0.62f -> 0f
-                progress < 0.69f -> -amplitude * 0.30f
-                progress < 0.76f -> 0f
-                else -> 0f
-            }
-        }
+private fun DrawScope.drawVoiceBars(
+    level: Float,
+    phase: Float,
+    active: Color,
+    inactive: Color,
+) {
+    val count = 27
+    val gap = 4.dp.toPx()
+    val barWidth = ((size.width - gap * (count - 1)) / count).coerceAtLeast(2.dp.toPx())
+    val centerY = size.height / 2f
+    val maxHeight = size.height * 0.88f
 
-        val samples = 180
-        for (i in 0..samples) {
-            val x = width * i / samples
-            val local = ((x % cycleWidth) / cycleWidth)
-            val gentle = sin((x / width) * Math.PI * 2.0).toFloat() * amplitude * 0.025f
-            val y = centerY + ecgOffset(local) + gentle
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-
-        drawLine(
-            color = track,
-            start = androidx.compose.ui.geometry.Offset(0f, centerY),
-            end = androidx.compose.ui.geometry.Offset(width, centerY),
-            strokeWidth = 1f,
-        )
-        drawPath(
-            path = path,
-            color = primary,
-            style = Stroke(width = 2.25f, cap = StrokeCap.Round),
+    repeat(count) { index ->
+        val x = index * (barWidth + gap)
+        val normalized = index / (count - 1f)
+        val centerWeight = 1f - abs(normalized - 0.5f) * 1.7f
+        val wave = (0.5f + 0.5f * sin(phase + index * 0.72f)).coerceIn(0f, 1f)
+        val base = 0.10f + level * (0.25f + centerWeight.coerceAtLeast(0f) * 0.62f)
+        val height = (maxHeight * (base + wave * level * 0.18f)).coerceIn(4.dp.toPx(), maxHeight)
+        val color = if (level > 0.025f && height > 8.dp.toPx()) active else inactive
+        drawRoundRect(
+            color = color,
+            topLeft = androidx.compose.ui.geometry.Offset(x, centerY - height / 2f),
+            size = androidx.compose.ui.geometry.Size(barWidth, height),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f, barWidth / 2f),
         )
     }
 }

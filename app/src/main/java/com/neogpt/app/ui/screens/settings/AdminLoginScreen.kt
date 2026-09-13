@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.neogpt.app.security.AdminAuth
 import com.neogpt.app.ui.components.NeoPage
+import com.neogpt.app.ui.components.NeoButton
 import com.neogpt.app.ui.theme.NeoShapes
 
 @Composable

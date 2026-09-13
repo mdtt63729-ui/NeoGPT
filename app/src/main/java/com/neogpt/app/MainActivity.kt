@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 com.neogpt.app.settings.AppSettings.ThemeMode.AMOLED -> NeoThemeMode.Amoled
                 com.neogpt.app.settings.AppSettings.ThemeMode.SYSTEM -> NeoThemeMode.System
             }
-            NeoGPTTheme(themeMode = themeMode, dynamicColor = settings.dynamicColor, liquidGlass = false) {
+            NeoGPTTheme(themeMode = themeMode, dynamicColor = settings.dynamicColor) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
