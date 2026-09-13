@@ -57,6 +57,7 @@ fun ChatScreen(
     var voiceManager by remember { mutableStateOf<VoiceInputManager?>(null) }
     var voiceState by remember { mutableStateOf(VoiceState.IDLE) }
     var voiceTranscript by remember { mutableStateOf("") }
+    var voiceRmsLevel by remember { mutableStateOf(0f) }
     var pendingImageDownload by remember { mutableStateOf<String?>(null)}
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -81,9 +82,10 @@ fun ChatScreen(
         val manager = VoiceInputManager(context)
         voiceManager = manager
         val job = kotlinx.coroutines.MainScope().launch {
-            kotlinx.coroutines.flow.combine(manager.state, manager.transcript) { s, t -> s to t }.collect { (s, t) ->
+            kotlinx.coroutines.flow.combine(manager.state, manager.transcript, manager.rmsLevel) { s, t, rms -> Triple(s, t, rms) }.collect { (s, t, rms) ->
                 voiceState = s
                 voiceTranscript = t
+                voiceRmsLevel = rms
                 if (s == VoiceState.IDLE && t.isNotBlank()) composerText = t
             }
         }
@@ -163,6 +165,7 @@ fun ChatScreen(
                     onVoiceStop = { voiceManager?.stopListening() },
                     isListening = listening,
                     voiceTranscript = voiceTranscript,
+                    voiceRmsLevel = voiceRmsLevel,
                     onLiveClick = onOpenLive,
                     isGenerating = state.isGenerating,
                     onStop = viewModel::stopGeneration,

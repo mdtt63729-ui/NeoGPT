@@ -37,6 +37,7 @@ fun NeoIconButton(
     contentDescription: String? = null,
     enabled: Boolean = true,
     tint: Color = NeoOnSurfaceVariant,
+    iconSize: androidx.compose.ui.unit.Dp = 24.dp,
 ) {
     val ui = rememberAppSettingsState(LocalContext.current)
     val haptic = LocalHapticFeedback.current
@@ -55,12 +56,12 @@ fun NeoIconButton(
             interactionSource = source,
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription, Modifier.size(24.dp), tint = tint)
+                Icon(icon, contentDescription, Modifier.size(iconSize), tint = tint)
             }
         }
     } else {
         IconButton(onClick = click, modifier = modifier.size(48.dp), enabled = enabled, colors = IconButtonDefaults.iconButtonColors(contentColor = tint)) {
-            Icon(icon, contentDescription, Modifier.size(24.dp), tint = tint)
+            Icon(icon, contentDescription, Modifier.size(iconSize), tint = tint)
         }
     }
 }

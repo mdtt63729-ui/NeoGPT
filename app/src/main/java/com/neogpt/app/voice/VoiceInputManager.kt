@@ -18,12 +18,19 @@ class VoiceInputManager(context: Context) {
     val state: StateFlow<VoiceState> = _state.asStateFlow()
     private val _transcript = MutableStateFlow("")
     val transcript: StateFlow<String> = _transcript.asStateFlow()
+    private val _rmsLevel = MutableStateFlow(0f)
+    val rmsLevel: StateFlow<Float> = _rmsLevel.asStateFlow()
 
     init {
         recognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) { _state.value = VoiceState.LISTENING }
             override fun onBeginningOfSpeech() { _state.value = VoiceState.LISTENING }
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) {
+                // SpeechRecognizer reports approximate input loudness in dB.
+                // Normalize the useful speech range into 0..1 for the live trace.
+                val normalized = ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
+                _rmsLevel.value = normalized
+            }
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() { _state.value = VoiceState.PROCESSING }
             override fun onError(error: Int) {
@@ -57,6 +64,7 @@ class VoiceInputManager(context: Context) {
             return
         }
         _transcript.value = ""
+        _rmsLevel.value = 0f
         _state.value = VoiceState.LISTENING
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -76,11 +84,13 @@ class VoiceInputManager(context: Context) {
 
     fun stopListening() {
         try { recognizer.stopListening() } catch (_: Exception) {}
+        _rmsLevel.value = 0f
         _state.value = VoiceState.PROCESSING
     }
 
     fun cancelListening() {
         try { recognizer.cancel() } catch (_: Exception) {}
+        _rmsLevel.value = 0f
         _state.value = VoiceState.IDLE
     }
 

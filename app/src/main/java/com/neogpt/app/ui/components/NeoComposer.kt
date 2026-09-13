@@ -36,7 +36,7 @@ enum class AttachmentType { IMAGE, FILE, AUDIO, VIDEO }
 fun NeoComposer(
     text: String, onTextChange: (String) -> Unit, onSend: () -> Unit, onAddClick: () -> Unit, onImageClick: () -> Unit = {},
     modifier: Modifier = Modifier, onVoiceClick: () -> Unit = {}, onVoiceStop: () -> Unit = {},
-    isListening: Boolean = false, voiceTranscript: String = "", onLiveClick: () -> Unit = {},
+    isListening: Boolean = false, voiceTranscript: String = "", voiceRmsLevel: Float = 0f, onLiveClick: () -> Unit = {},
     isGenerating: Boolean = false, onStop: () -> Unit = {}, attachments: List<AttachmentChip> = emptyList(),
     onRemoveAttachment: (String) -> Unit = {}, activeMode: ComposerMode? = null,
     placeholder: String = "Ask anything…",
@@ -44,14 +44,14 @@ fun NeoComposer(
 ) {
     val ui = neoUiSettings()
     if (ui.liquidGlass) {
-        NeoLiquidGlass(modifier = modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm), shape = NeoShapes.pill) {
-            ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
+        NeoLiquidGlass(modifier = modifier.fillMaxWidth().padding(horizontal = 2.dp), shape = NeoShapes.pill) {
+            ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, voiceRmsLevel, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
         }
     } else Surface(
-        modifier = modifier.fillMaxWidth().padding(horizontal = NeoSpacing.sm), shape = NeoShapes.pill,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 2.dp), shape = NeoShapes.pill,
         color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp, shadowElevation = 2.dp,
     ) {
-        ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
+        ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, voiceRmsLevel, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
     }
 }
 
@@ -83,7 +83,7 @@ private fun ComposerContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box {
-                    NeoIconButton(icon = Icons.Rounded.Add, onClick = { showAddMenu = true }, contentDescription = "Add")
+                    NeoIconButton(icon = Icons.Rounded.Add, onClick = { showAddMenu = true }, contentDescription = "Add", iconSize = 19.dp)
                     DropdownMenu(
                         expanded = showAddMenu,
                         onDismissRequest = { showAddMenu = false },
@@ -102,10 +102,11 @@ private fun ComposerContent(
                     }
                 }
                 if (isListening) {
-                    Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.Center) {
-                        Text(if (voiceTranscript.isBlank()) "Listening…" else voiceTranscript, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
-                        Spacer(Modifier.height(2.dp))
-                        Text("Speak naturally · stops after 2 seconds of silence", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Box(Modifier.weight(1f).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                        NeoVoiceWaveform(
+                            rmsLevel = if (voiceTranscript.isNotBlank()) maxOf(voiceRmsLevel, 0.10f) else voiceRmsLevel,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 } else {
                     OutlinedTextField(
@@ -120,12 +121,12 @@ private fun ComposerContent(
                         ), shape = NeoShapes.pill,
                     )
                 }
-                if (isListening) NeoIconButton(icon = Icons.Rounded.Stop, onClick = onVoiceStop, contentDescription = "Stop voice input")
-                else NeoIconButton(icon = Icons.Rounded.Mic, onClick = onVoiceClick, contentDescription = "Voice input")
+                if (isListening) NeoIconButton(icon = Icons.Rounded.Stop, onClick = onVoiceStop, contentDescription = "Stop voice input", iconSize = 18.dp)
+                else NeoIconButton(icon = Icons.Rounded.Mic, onClick = onVoiceClick, contentDescription = "Voice input", iconSize = 19.dp)
                 Spacer(Modifier.width(NeoSpacing.xs))
                 AnimatedContent(targetState = action, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "composer-action") { current ->
                     Surface(
-                        modifier = Modifier.size(42.dp).graphicsLayer { scaleX = actionScale; scaleY = actionScale },
+                        modifier = Modifier.size(40.dp).graphicsLayer { scaleX = actionScale; scaleY = actionScale },
                         shape = CircleShape,
                         color = if (current == "live") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary,
                         onClick = when (current) { "stop" -> onStop; "send" -> onSend; else -> onLiveClick },
@@ -135,7 +136,7 @@ private fun ComposerContent(
                                 when (current) { "stop" -> Icons.Rounded.Stop; "send" -> Icons.Rounded.ArrowUpward; else -> Icons.Rounded.GraphicEq },
                                 contentDescription = when (current) { "stop" -> "Stop generating"; "send" -> "Send"; else -> "Live conversation" },
                                 tint = if (current == "live") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(21.dp),
+                                modifier = Modifier.size(18.dp),
                             )
                         }
                     }

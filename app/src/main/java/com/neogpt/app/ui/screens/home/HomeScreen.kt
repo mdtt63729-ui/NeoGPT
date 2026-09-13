@@ -59,6 +59,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
     var voiceManager by remember { mutableStateOf<VoiceInputManager?>(null) }
     var voiceState by remember { mutableStateOf(VoiceState.IDLE) }
     var voiceTranscript by remember { mutableStateOf("") }
+    var voiceRmsLevel by remember { mutableStateOf(0f) }
 
     val recordPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) voiceManager?.startListening() }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -72,8 +73,8 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
     DisposableEffect(Unit) {
         val manager = VoiceInputManager(context); voiceManager = manager
         val job = kotlinx.coroutines.MainScope().launch {
-            kotlinx.coroutines.flow.combine(manager.state, manager.transcript) { s, t -> s to t }.collect { (s, t) ->
-                voiceState = s; voiceTranscript = t
+            kotlinx.coroutines.flow.combine(manager.state, manager.transcript, manager.rmsLevel) { s, t, rms -> Triple(s, t, rms) }.collect { (s, t, rms) ->
+                voiceState = s; voiceTranscript = t; voiceRmsLevel = rms
                 if (s == VoiceState.IDLE && t.isNotBlank()) composerText = t
             }
         }
@@ -118,7 +119,7 @@ fun HomeScreen(onOpenDrawer: () -> Unit, onOpenChat: (String, String, String, St
                 },
                 onVoiceClick = { if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) voiceManager?.startListening() else recordPermission.launch(Manifest.permission.RECORD_AUDIO) },
                 onVoiceStop = { voiceManager?.stopListening() },
-                isListening = listening, voiceTranscript = voiceTranscript,
+                isListening = listening, voiceTranscript = voiceTranscript, voiceRmsLevel = voiceRmsLevel,
                 onLiveClick = onOpenLive,
                 attachments = if (selectedUri != null) listOf(AttachmentChip("home", selectedName, homeAttachmentType(selectedMime))) else emptyList(),
                 onRemoveAttachment = { selectedUri = null; selectedName = ""; selectedMime = "" },
