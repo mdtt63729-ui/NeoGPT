@@ -55,7 +55,8 @@ android {
 }
 
 dependencies {
-    // Compose BOM
+    // Compose BOM: 2026.06.01 maps to the stable Compose 1.11.4 line,
+    // which remains compatible with compileSdk 36. Compose 1.12+ requires API 37.
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)

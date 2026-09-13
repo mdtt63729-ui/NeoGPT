@@ -58,6 +58,7 @@ jobs:
           test -f app/build.gradle.kts
           grep -Eq 'compileSdk\s*=\s*36' app/build.gradle.kts
           grep -Eq 'targetSdk\s*=\s*36' app/build.gradle.kts
+          grep -Eq 'composeBom\s*=\s*"2026\.06\.01"' gradle/libs.versions.toml
           grep -Eq 'assembleRelease' .github/workflows/android-build.yml
           forbidden_task="assemble""Debug"
           if grep -Eq "(^|[^A-Za-z])${forbidden_task}([^A-Za-z]|$)" .github/workflows/android-build.yml; then
