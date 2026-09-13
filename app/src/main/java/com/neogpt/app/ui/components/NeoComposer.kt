@@ -45,13 +45,53 @@ fun NeoComposer(
     val ui = neoUiSettings()
     if (ui.liquidGlass) {
         NeoLiquidGlass(modifier = modifier.fillMaxWidth().padding(horizontal = 2.dp), shape = NeoShapes.pill) {
-            ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, voiceRmsLevel, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
+            ComposerContent(
+                text = text,
+                onTextChange = onTextChange,
+                onSend = onSend,
+                onAddClick = onAddClick,
+                onImageClick = onImageClick,
+                modifier = modifier,
+                onVoiceClick = onVoiceClick,
+                onVoiceStop = onVoiceStop,
+                isListening = isListening,
+                voiceTranscript = voiceTranscript,
+                voiceRmsLevel = voiceRmsLevel,
+                onLiveClick = onLiveClick,
+                isGenerating = isGenerating,
+                onStop = onStop,
+                attachments = attachments,
+                onRemoveAttachment = onRemoveAttachment,
+                activeMode = activeMode,
+                placeholder = placeholder,
+                enterToSend = enterToSend,
+            )
         }
     } else Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 2.dp), shape = NeoShapes.pill,
         color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 1.dp, shadowElevation = 2.dp,
     ) {
-        ComposerContent(text, onTextChange, onSend, onAddClick, onImageClick, modifier, onVoiceClick, onVoiceStop, isListening, voiceTranscript, voiceRmsLevel, onLiveClick, isGenerating, onStop, attachments, onRemoveAttachment, activeMode, placeholder, enterToSend)
+        ComposerContent(
+                text = text,
+                onTextChange = onTextChange,
+                onSend = onSend,
+                onAddClick = onAddClick,
+                onImageClick = onImageClick,
+                modifier = modifier,
+                onVoiceClick = onVoiceClick,
+                onVoiceStop = onVoiceStop,
+                isListening = isListening,
+                voiceTranscript = voiceTranscript,
+                voiceRmsLevel = voiceRmsLevel,
+                onLiveClick = onLiveClick,
+                isGenerating = isGenerating,
+                onStop = onStop,
+                attachments = attachments,
+                onRemoveAttachment = onRemoveAttachment,
+                activeMode = activeMode,
+                placeholder = placeholder,
+                enterToSend = enterToSend,
+            )
     }
 }
 

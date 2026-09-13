@@ -58,6 +58,9 @@ data class NeoMessageData(
     val imageUrl: String? = null,
     val isImageGenerating: Boolean = false,
     val imageCreated: Boolean = false,
+    val agentSteps: List<AgentStep> = emptyList(),
+    val imageProgress: Int = 0,
+    val imageStatusText: String = "Sketching it out…",
 )
 
 @Composable
@@ -118,6 +121,13 @@ fun NeoMessage(
                 Spacer(modifier = Modifier.width(NeoSpacing.md))
                 // Content
                 Column(modifier = Modifier.weight(1f)) {
+                    if (message.agentSteps.isNotEmpty()) {
+                        AgentStatusStack(
+                            steps = message.agentSteps,
+                            modifier = Modifier.padding(bottom = NeoSpacing.xs),
+                            onErrorClick = onRegenerate,
+                        )
+                    }
                     if (message.content.isNotEmpty()) {
                         NeoMarkdown(
                             markdown = message.content,
@@ -132,6 +142,8 @@ fun NeoMessage(
                             imageUrl = message.imageUrl,
                             isGenerating = message.isImageGenerating,
                             imageCreated = message.imageCreated,
+                            imageProgress = message.imageProgress,
+                            imageStatusText = message.imageStatusText,
                             onDownload = onDownloadImage,
                         )
                     }

@@ -1,8 +1,7 @@
 package com.neogpt.app.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -36,7 +35,8 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
     var adminLoggedIn by remember { mutableStateOf(adminAuth.isLoggedIn()) }
 
     NeoPage("Settings", onBack) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = NeoSpacing.xxl)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = NeoSpacing.xxl)) {
+            item {
         NeoSectionTitle("Appearance", "Changes apply instantly across the app.")
         SettingSwitchCard(Icons.Rounded.WaterDrop, "Enable liquid glass design", "Use translucent glass surfaces, depth, highlights and press feedback across Neo GPT.", ui.liquidGlass) { settings.setLiquidGlass(it) }
         Spacer(Modifier.height(NeoSpacing.sm))
@@ -81,7 +81,7 @@ fun SettingsScreen(onBack: () -> Unit, onAdminLogin: () -> Unit = {}) {
         NeoFeatureCard(Icons.Rounded.Security, "Privacy & security", "Provider API keys stay in encrypted Android Keystore-backed storage.", {})
         Spacer(Modifier.height(NeoSpacing.sm))
         NeoFeatureCard(Icons.Rounded.Info, "About Neo GPT", "Version 1.4.0 • Material 3 • Liquid Glass option • Multi-provider AI", {})
-        Spacer(Modifier.height(NeoSpacing.xxl))
+            }
         }
     }
 }

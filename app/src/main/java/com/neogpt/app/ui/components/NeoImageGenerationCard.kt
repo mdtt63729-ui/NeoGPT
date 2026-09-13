@@ -2,10 +2,6 @@ package com.neogpt.app.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.input.pointer.pointerInput
@@ -41,24 +36,13 @@ fun NeoImageGenerationCard(
     imageUrl: String?,
     isGenerating: Boolean,
     imageCreated: Boolean,
+    imageProgress: Int = 0,
+    imageStatusText: String = "Sketching it out…",
     onDownload: () -> Unit,
     onRetry: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showDownload by remember(imageUrl) { mutableStateOf(false) }
-    val transition = rememberInfiniteTransition(label = "image-generation")
-    val pulse by transition.animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "image-pulse",
-    )
-    val shimmer by transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Restart),
-        label = "image-shimmer",
-    )
     val blurRadius = animateFloatAsStateCompat(if (imageCreated) 0f else 16f)
     val imageAlpha = animateFloatAsStateCompat(if (imageCreated) 1f else 0f)
     val imageScale = animateFloatAsStateCompat(if (imageCreated) 1f else 0.96f)
@@ -76,41 +60,39 @@ fun NeoImageGenerationCard(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    MaterialTheme.colorScheme.secondaryContainer,
-                                ),
-                                start = androidx.compose.ui.geometry.Offset(shimmer * 700f, 0f),
-                                end = androidx.compose.ui.geometry.Offset(shimmer * 700f + 900f, 1000f),
-                            )
-                        )
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                )
+                PulsingDotGrid(
+                    progress = imageProgress,
+                    modifier = Modifier
+                        .fillMaxWidth(0.68f)
+                        .aspectRatio(1f),
                 )
                 Surface(
-                    modifier = Modifier.size(92.dp).graphicsLayer { scaleX = pulse; scaleY = pulse },
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                ) {}
-                Surface(
-                    modifier = Modifier.size(62.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    tonalElevation = 4.dp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(18.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)),
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(30.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Row(Modifier.padding(horizontal = 13.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(7.dp))
+                        Text(
+                            text = imageStatusText,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "${imageProgress.coerceIn(0, 100)}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
-                Text(
-                    "Creating image…",
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
             }
-
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -168,7 +150,7 @@ fun NeoImageGenerationCard(
                     Text("Image created 🖼️", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 }
             } else if (isGenerating) {
-                Text("Generating your image…", Modifier.padding(top = 10.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(imageStatusText, Modifier.padding(top = 10.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (imageCreated) {

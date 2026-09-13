@@ -24,6 +24,10 @@ import com.neogpt.app.ui.components.ComposerMode
 import com.neogpt.app.ui.components.MessageRole
 import com.neogpt.app.ui.components.NeoMessageData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -71,7 +75,13 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
             content = prompt.ifBlank { "Attached ${pendingAttachments.size} file(s)" },
         )
         val aiId = "${System.currentTimeMillis()}-a"
-        val ai = NeoMessageData(aiId, MessageRole.AI, "", isStreaming = true)
+        val ai = NeoMessageData(
+            aiId,
+            MessageRole.AI,
+            "",
+            isStreaming = true,
+            agentSteps = listOf(AgentStep("understand", "Understanding your request", AgentStepState.IN_PROGRESS)),
+        )
         _state.update { it.copy(messages = it.messages + user + ai, isGenerating = true, error = null) }
         generationJob?.cancel()
         generationJob = viewModelScope.launch(Dispatchers.IO) {
@@ -87,7 +97,21 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
                 }
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) return@launch
-                _state.update { current -> current.copy(isGenerating = false, error = t.message ?: "Unable to reach ${modelRef.provider.displayName}.", messages = current.messages.filterNot { it.id == aiId }) }
+                val message = t.message ?: "Unable to reach ${modelRef.provider.displayName}."
+                _state.update { current ->
+                    current.copy(
+                        isGenerating = false,
+                        error = message,
+                        messages = current.messages.map { item ->
+                            if (item.id == aiId) item.copy(
+                                content = "",
+                                isStreaming = false,
+                                isImageGenerating = false,
+                                agentSteps = item.agentSteps.map { step -> if (step.state == AgentStepState.IN_PROGRESS) step.copy(state = AgentStepState.ERROR, message = message) else step },
+                            ) else item
+                        },
+                    )
+                }
             }
         }
     }
@@ -96,7 +120,7 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         val description = prompt.trim().drop(6).trim()
         if (description.isBlank()) error("Add a description after /image.")
         updateImageGenerating(aiId)
-        val image = NeoAlphaDataSource(client).generateImage(description)
+        val image = generateImageWithProgress(aiId, description)
         updateImageResult(aiId, image.imageUrl)
     }
 
@@ -108,9 +132,11 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
             val description = responseText.substring(6).trim()
             if (description.isBlank()) error("Neo 4.1 Alpha returned an empty image description.")
             updateImageGenerating(aiId)
-            val image = source.generateImage(description)
+            val image = generateImageWithProgress(aiId, description, source)
             updateImageResult(aiId, image.imageUrl)
         } else {
+            updateStep(aiId, "understand", AgentStepState.COMPLETED)
+            appendStep(aiId, AgentStep("stream", "Generating response", AgentStepState.IN_PROGRESS))
             updateStreaming(aiId, result.text)
             finishStreaming()
         }
@@ -122,6 +148,8 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         val source = GeminiDataSource(client, apiKeyProvider = { storage.getProviderKey(AiProvider.GEMINI.id).orEmpty() })
         val messages = historyWithPendingAttachments(pendingAttachments, source)
         val request = GeminiRequestMapper.buildRequest(messages, modelRef.modelId)
+        updateStep(aiId, "understand", AgentStepState.COMPLETED)
+        appendStep(aiId, AgentStep("stream", "Generating response", AgentStepState.IN_PROGRESS))
         var accumulated = ""
         source.streamGenerateContent(modelRef.modelId, request).collect { chunk ->
             accumulated += chunk
@@ -139,6 +167,8 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
             baseUrl = modelRef.provider.baseUrl,
             providerName = modelRef.provider.displayName,
         )
+        updateStep(aiId, "understand", AgentStepState.COMPLETED)
+        appendStep(aiId, AgentStep("stream", "Generating response", AgentStepState.IN_PROGRESS))
         val history = _state.value.messages.filter { it.content.isNotBlank() }.dropLast(1)
         val providerMessages = history.dropLast(1).map { msg ->
             OpenAiCompatibleDataSource.ProviderMessage(
@@ -190,16 +220,86 @@ class ChatViewModel(context: Context, modelId: String) : ViewModel() {
         _state.update { current -> current.copy(messages = current.messages.map { m -> if (m.id == aiId) m.copy(content = content, isStreaming = true) else m }) }
     }
 
+    private fun updateStep(aiId: String, stepId: String, state: AgentStepState) {
+        _state.update { current ->
+            current.copy(messages = current.messages.map { message ->
+                if (message.id != aiId) message
+                else message.copy(agentSteps = message.agentSteps.map { step -> if (step.id == stepId) step.copy(state = state) else step })
+            })
+        }
+    }
+
+    private fun appendStep(aiId: String, step: AgentStep) {
+        _state.update { current ->
+            current.copy(messages = current.messages.map { message ->
+                if (message.id == aiId) message.copy(agentSteps = message.agentSteps + step) else message
+            })
+        }
+    }
+
     private fun updateImageGenerating(aiId: String) {
-        _state.update { current -> current.copy(messages = current.messages.map { m -> if (m.id == aiId) m.copy(content = "", isStreaming = false, isImageGenerating = true, imageUrl = null, imageCreated = false) else m }) }
+        _state.update { current ->
+            current.copy(messages = current.messages.map { m ->
+                if (m.id == aiId) m.copy(
+                    content = "",
+                    isStreaming = false,
+                    isImageGenerating = true,
+                    imageUrl = null,
+                    imageCreated = false,
+                    imageProgress = 4,
+                    imageStatusText = "Preparing the canvas…",
+                    agentSteps = listOf(
+                        AgentStep("understand", "Understanding your request", AgentStepState.COMPLETED),
+                        AgentStep("image", "Preparing image generation", AgentStepState.COMPLETED),
+                    ),
+                ) else m
+            })
+        }
+    }
+
+    private suspend fun generateImageWithProgress(
+        aiId: String,
+        description: String,
+        source: NeoAlphaDataSource = NeoAlphaDataSource(client),
+    ): NeoAlphaDataSource.ImageResult = coroutineScope {
+        val progressJob = launch {
+            var progress = 8
+            while (isActive && progress < 92) {
+                val status = when {
+                    progress < 28 -> "Sketching it out…"
+                    progress < 55 -> "Building the composition…"
+                    progress < 78 -> "Rendering details…"
+                    else -> "Polishing the image…"
+                }
+                updateImageProgress(aiId, progress, status)
+                delay(180)
+                progress += if (progress < 55) 3 else 2
+            }
+        }
+        try {
+            source.generateImage(description).also {
+                progressJob.cancel()
+                updateImageProgress(aiId, 100, "Image rendered")
+            }
+        } finally {
+            progressJob.cancel()
+        }
+    }
+
+    private fun updateImageProgress(aiId: String, progress: Int, status: String) {
+        _state.update { current ->
+            current.copy(messages = current.messages.map { m ->
+                if (m.id == aiId) m.copy(imageProgress = progress.coerceIn(0, 100), imageStatusText = status) else m
+            })
+        }
     }
 
     private fun updateImageResult(aiId: String, imageUrl: String) {
-        _state.update { current -> current.copy(isGenerating = false, messages = current.messages.map { m -> if (m.id == aiId) m.copy(isStreaming = false, isImageGenerating = false, imageUrl = imageUrl, imageCreated = true) else m }) }
+        _state.update { current -> current.copy(isGenerating = false, messages = current.messages.map { m -> if (m.id == aiId) m.copy(isStreaming = false, isImageGenerating = false, imageUrl = imageUrl, imageCreated = true, imageProgress = 100, imageStatusText = "Image rendered", agentSteps = m.agentSteps.map { step -> step.copy(state = AgentStepState.COMPLETED) } + AgentStep("done", "Image created", AgentStepState.COMPLETED)) else m }) }
     }
 
     private fun finishStreaming() {
-        _state.update { current -> current.copy(isGenerating = false, messages = current.messages.map { m -> if (m.isStreaming) m.copy(isStreaming = false) else m }) }
+        _state.update { current -> current.copy(isGenerating = false, messages = current.messages.map { m -> if (m.isStreaming) m.copy(isStreaming = false, agentSteps = m.agentSteps.map { step -> step.copy(state = AgentStepState.COMPLETED) } + AgentStep("done", "Response ready", AgentStepState.COMPLETED)) else m }) }
     }
 
     fun stopGeneration() {
