@@ -50,7 +50,7 @@ fun AgentStatusStack(
     toolLabels: List<String> = emptyList(),
 ) {
     if (steps.isEmpty()) return
-    var expanded by remember(steps.size) { mutableStateOf(false) }
+    var expanded by remember(steps.size) { mutableStateOf(steps.size > 1) }
     val active = steps.lastOrNull { it.state == AgentStepState.IN_PROGRESS } ?: steps.last()
 
     Column(
@@ -69,7 +69,7 @@ fun AgentStatusStack(
         ) {
             Column(Modifier.padding(horizontal = 13.dp, vertical = 10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Thoughts", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Thinking", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.width(8.dp))
                     if (active.state == AgentStepState.IN_PROGRESS) NeoSoftThinkingDots()
                     Spacer(Modifier.weight(1f))
@@ -79,7 +79,7 @@ fun AgentStatusStack(
                 Text(active.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 if (toolLabels.isNotEmpty()) {
                     Spacer(Modifier.height(5.dp))
-                    Text("Used ${toolLabels.size} tool${if (toolLabels.size == 1) "" else "s"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Reading ${toolLabels.size} file${if (toolLabels.size == 1) "" else "s"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

@@ -31,3 +31,12 @@ The repository intentionally uses the Gradle executable provisioned by `gradle/a
 ## AI behavior
 
 A locally stored global system prompt is applied to supported text-capable providers/routes: Gemini, OpenRouter, NVIDIA NIM, Neo 4.1 Alpha and Gemini-powered Research. Provider safety policies and higher-priority instructions can still override it.
+
+## V39 live conversation update
+
+- Live Conversation now uses the Gemini Live API over a persistent WebSocket.
+- Microphone audio is streamed as 16 kHz mono PCM16 and Gemini native audio is played as 24 kHz mono PCM16.
+- Automatic activity detection and barge-in are enabled so the user can interrupt Neo while it is speaking.
+- User and assistant live transcriptions are surfaced in the Conversation UI.
+- The Live screen uses the Gemini Live model `gemini-3.1-flash-live-preview`.
+- Normal text-chat thinking remains a lightweight text + animated dots treatment; large tasks expose their current work stages without a spinning progress ring.

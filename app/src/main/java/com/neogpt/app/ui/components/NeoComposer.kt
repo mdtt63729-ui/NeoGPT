@@ -177,6 +177,11 @@ private enum class ComposerAction { SEND, LIVE, STOP }
 
 @Composable
 private fun ComposerActionButton(action: ComposerAction, onSend: () -> Unit, onStop: () -> Unit, onLive: () -> Unit) {
+    val clickAction: () -> Unit = when (action) {
+        ComposerAction.SEND -> onSend
+        ComposerAction.STOP -> onStop
+        ComposerAction.LIVE -> onLive
+    }
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -190,11 +195,7 @@ private fun ComposerActionButton(action: ComposerAction, onSend: () -> Unit, onS
         label = "composer-action-color",
     )
     Surface(
-        onClick = when (action) {
-            ComposerAction.SEND -> onSend
-            ComposerAction.STOP -> onStop
-            ComposerAction.LIVE -> onLive
-        },
+        onClick = clickAction,
         modifier = Modifier.size(50.dp).scale(scale),
         shape = CircleShape,
         color = containerColor,

@@ -8,7 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
-import androidx.navigation.compose.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedContentTransitionScope
 
 // One calm motion language. No overshoot, no snap, and no stacked long animations.
 private val NeoEase = CubicBezierEasing(0.16f, 1.0f, 0.3f, 1.0f)

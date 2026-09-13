@@ -8,7 +8,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,13 +22,10 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun NeoImageGenerationCard(
@@ -74,16 +71,9 @@ fun NeoImageGenerationCard(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        imageStatusText,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    Text(imageStatusText, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(4.dp))
-                    LinearProgressIndicator(
-                        progress = progress / 100f,
-                        modifier = Modifier.width(124.dp).height(2.dp),
-                    )
+                    LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.width(124.dp).height(2.dp))
                 }
             }
 
@@ -96,18 +86,7 @@ fun NeoImageGenerationCard(
                         .graphicsLayer { alpha = imageAlpha }
                         .blur(blurRadius.dp)
                         .pointerInput(imageUrl) {
-                            awaitEachGesture {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                val held = withTimeoutOrNull(1600L) {
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        val change = event.changes.firstOrNull { it.id == down.id }
-                                            ?: return@withTimeoutOrNull false
-                                        if (change.changedToUp()) return@withTimeoutOrNull false
-                                    }
-                                } == null
-                                if (held) showDownload = true
-                            }
+                            detectTapGestures(onLongPress = { showDownload = true })
                         },
                     contentScale = ContentScale.Crop,
                 )
@@ -147,20 +126,13 @@ fun NeoImageGenerationCard(
             label = "image-caption",
         ) { state ->
             when (state) {
-                2 -> Text(
-                    "Image ready • press and hold to save",
-                    modifier = Modifier.padding(top = 9.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                2 -> Text("Image ready • press and hold to save", modifier = Modifier.padding(top = 9.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 1 -> Spacer(Modifier.height(9.dp))
-                else -> {
-                    if (imageUrl == null) {
-                        TextButton(onClick = onRetry, modifier = Modifier.padding(top = 1.dp)) {
-                            Icon(Icons.Rounded.Refresh, null, Modifier.size(17.dp))
-                            Spacer(Modifier.width(5.dp))
-                            Text("Try again")
-                        }
+                else -> if (imageUrl == null) {
+                    TextButton(onClick = onRetry, modifier = Modifier.padding(top = 1.dp)) {
+                        Icon(Icons.Rounded.Refresh, null, Modifier.size(17.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("Try again")
                     }
                 }
             }

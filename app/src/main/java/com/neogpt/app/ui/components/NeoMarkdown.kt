@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.neogpt.app.ui.theme.NeoCodeStyle
 import com.neogpt.app.ui.theme.NeoFontFamily
@@ -90,7 +89,7 @@ private fun inlineMarkdown(text: String): AnnotatedString {
         )
 
         token.findAll(text).forEach { match ->
-            if (match.range.first > cursor) withStyle(currentStyle()) { append(text.substring(cursor, match.range.first)) }
+            if (match.range.first > cursor) pushStyle(currentStyle()); append(text.substring(cursor, match.range.first)); pop()
             when (match.value) {
                 "**", "__" -> bold = !bold
                 "`" -> code = !code
@@ -100,6 +99,6 @@ private fun inlineMarkdown(text: String): AnnotatedString {
             }
             cursor = match.range.last + 1
         }
-        if (cursor < text.length) withStyle(currentStyle()) { append(text.substring(cursor)) }
+        if (cursor < text.length) pushStyle(currentStyle()); append(text.substring(cursor)); pop()
     }
 }
